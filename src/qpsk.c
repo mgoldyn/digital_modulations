@@ -11,10 +11,10 @@
 void init_qpsk_signal_lut(float* restrict signal_lut)
 {
     int32_t sig_idx = 0, half_sig_idx = N_MAX_DEGREE;
-    for(; signal_lut < N_MAX_DEGREE; ++ signal_lut)
+    for(; sig_idx < N_MAX_DEGREE; ++sig_idx)
     {
-        signal_lut[sig_idx] = cos(signal_lut * 2 * PI / N_MAX_DEGREE);
-        singal_lut[half_sig_idx++] = - signal_lut[sig_idx];
+        signal_lut[sig_idx] = cos(((float)sig_idx * 2 * PI )/ N_MAX_DEGREE);
+        signal_lut[half_sig_idx++] = - signal_lut[sig_idx];
     }
 }
 
@@ -37,9 +37,9 @@ void modulate_qpsk(int32_t n_bits,
     int32_t phase_shift;
     for(; bit_idx < n_bits; bit_idx += 2, ++data_idx)
     {
-        if(!bit_stream[i])
+        if(!bit_stream[bit_idx])
         {
-            if(!bit_stream[i + 1])
+            if(!bit_stream[bit_idx + 1])
             {
                 phase_shift = QPSK_PHASE_00;
             }
@@ -50,7 +50,7 @@ void modulate_qpsk(int32_t n_bits,
         }
         else
         {
-            if(!bit_stream[i + 1])
+            if(!bit_stream[bit_idx + 1])
             {
                 phase_shift = QPSK_PHASE_10;
             }
@@ -60,6 +60,6 @@ void modulate_qpsk(int32_t n_bits,
             }
         }
 
-        set_phase_shift(phase_shift, signal_data, modulated_signal[data_idx * N_MAX_DEGREE]);
+        set_phase_shift(phase_shift, signal_data, &modulated_signal[data_idx * N_MAX_DEGREE]);
     }
 }
