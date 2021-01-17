@@ -1,5 +1,5 @@
-#include "/home/mgoldyn/git/magisterka/inc/qpsk.h"
-#include "/home/mgoldyn/git/magisterka/inc/consts.h"
+#include "../inc/qpsk.h"
+#include "../inc/consts.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -11,13 +11,16 @@
 void init_qpsk_signal_lut(float* restrict signal_lut)
 {
     int32_t sig_idx = 0, half_sig_idx = N_MAX_DEGREE;
-    for(; sig_idx < N_MAX_DEGREE; ++sig_idx)
+    float cos_value;
+    for(; sig_idx < N_DEGREE; ++sig_idx)
     {
-        signal_lut[sig_idx] = cos(((float)sig_idx * 2 * PI ) / N_MAX_DEGREE);
-        signal_lut[half_sig_idx++] = - signal_lut[sig_idx];
+        cos_value = cos(((float)sig_idx * 2 * PI ) / N_MAX_DEGREE);
+        signal_lut[sig_idx] = cos_value;
+        signal_lut[half_sig_idx++] = cos_value;
     }
 }
 
+static inline
 void set_phase_shift(int32_t phase_shift, const float* restrict signal_data, float* restrict modulated_signal)
 {
     int32_t sig_idx = 0;
@@ -59,7 +62,7 @@ void modulate_qpsk(int32_t n_bits,
                 phase_shift = QPSK_PHASE_11;
             }
         }
-
+        printf("\n bit idx = %d, data_idx = %d, shift = %d\n", bit_idx, data_idx, phase_shift);
         set_phase_shift(phase_shift, signal_data, &modulated_signal[data_idx * N_MAX_DEGREE]);
     }
 }
