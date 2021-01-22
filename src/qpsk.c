@@ -8,30 +8,21 @@
 #define QPSK_PHASE_10 225
 #define QPSK_PHASE_00 315
 
-void init_qpsk_signal_lut(float* restrict signal_lut)
-{
-    int32_t sig_idx = 0, half_sig_idx = N_MAX_DEGREE;
-    float cos_value;
-    for(; sig_idx < N_DEGREE; ++sig_idx)
-    {
-        cos_value = cos(((float)sig_idx * 2 * PI ) / N_MAX_DEGREE);
-        signal_lut[sig_idx] = cos_value;
-        signal_lut[half_sig_idx++] = cos_value;
-    }
-}
-
 static inline
-void set_phase_shift(int32_t phase_shift, const float* restrict signal_data, float* restrict modulated_signal)
+void set_phase_shift(int32_t n_cos_samples, int32_t phase_shift, const float* restrict signal_data, float* restrict modulated_signal)
 {
+    const int32_t scaled_phase_shift = (int32_t)((float)phase_shift * ((float)n_cos_samples)/ N_MAX_DEGREE);
+
     int32_t sig_idx = 0;
     int32_t sig_lut_idx = 0;
-    for(; sig_idx < N_MAX_DEGREE; ++sig_idx)
+    for(; sig_idx < n_cos_samples; ++sig_idx)
     {
-        modulated_signal[sig_idx] = signal_data[phase_shift + sig_idx];
+        modulated_signal[sig_idx] = signal_data[scaled_phase_shift + sig_idx];
     }
 }
 
-void modulate_qpsk(int32_t n_bits,
+void modulate_qpsk(int32_t n_cos_samples,
+                   int32_t n_bits,
                    const int32_t* restrict bit_stream,
                    const float* restrict signal_data,
                    float* restrict modulated_signal)
@@ -63,6 +54,6 @@ void modulate_qpsk(int32_t n_bits,
             }
         }
         printf("\n bit idx = %d, data_idx = %d, shift = %d\n", bit_idx, data_idx, phase_shift);
-        set_phase_shift(phase_shift, signal_data, &modulated_signal[data_idx * N_MAX_DEGREE]);
+        set_phase_shift(n_cos_samples, phase_shift, signal_data, &modulated_signal[data_idx * n_cos_samples]);
     }
 }
