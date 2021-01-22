@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 C_DELLEXPORT float psk_cos_lut[N_DEGREE * 2];
-C_DELLEXPORT float modulated_data[N_MAX_DEGREE * 8];
+C_DELLEXPORT float modulated_data[N_MAX_DEGREE * 16];
 
 C_DELLEXPORT init_func(float amplitude,
                        float freq,

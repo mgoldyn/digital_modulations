@@ -3,6 +3,7 @@
 
 #include "types.h"
 
+C_DELLEXPORT
 void modulate_qpsk(int32_t n_cos_samples,
                    int32_t n_bits,
                    const int32_t* restrict bit_stream,
