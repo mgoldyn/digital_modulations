@@ -54,7 +54,7 @@ void modulate_qpsk(int32_t n_cos_samples,
                 phase_shift = QPSK_PHASE_11;
             }
         }
-        printf("\n bit idx = %d, data_idx = %d, shift = %d\n", bit_idx, data_idx, phase_shift);
+        
         set_phase_shift(n_cos_samples, phase_shift, signal_data, &modulated_signal[data_idx * n_cos_samples]);
     }
 }

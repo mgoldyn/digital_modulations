@@ -33,26 +33,41 @@ class MainWindow(QMainWindow):
         toolbar.addAction(button_action)
 
         self.setStatusBar(QStatusBar(self))
-
+        
     def onMyToolBarButtonClick(self, s):
-        print("click", s)
-        self.factor += 1
-        n_samples = 180 * 8 * self.factor
-        type_for_probki = c_float * n_samples
-        wsk_probki = type_for_probki.in_dll(modulation_dll,"modulated_data")
-        hamming = np.array(wsk_probki[:])
-        print(hamming)
+
         self.graphWidget.clear()
-        self.graphWidget.plot(hamming)
         amplitude2 = c_float(6)
         freq2 = c_float(15)
         cos_factor_idx2 = c_int(2)
-        n_samples = 2 * 8
-        modulation_dll.init_func(amplitude2, freq2, cos_factor_idx2)
-
+        n_samples = c_int(16)
+        pyarr = [0, 0,
+                 0, 0,
+                 1, 1,
+                 0, 0,
+                 0, 0,
+                 0, 0,
+                 0, 0,
+                 0, 0]
+        seq = c_int * len(pyarr)
+        bit_stream = seq(*pyarr)
+        modulation_dll.init_func(amplitude2, freq2, cos_factor_idx2, n_samples, byref(bit_stream))
+        
+        print("click", s)
+        self.factor = 2
+        n_samples = 180 * 8 * self.factor
+        type_for_probki = c_float * n_samples
+        
+        modulated_data_ptr = POINTER(type_for_probki).in_dll(modulation_dll,"modulated_data").contents
+        modulated_data = np.array(modulated_data_ptr[:])
+        
+        self.graphWidget.plot(modulated_data)
+        
+        modulation_dll.memory_free()
 
 app = QApplication(sys.argv)
 window = MainWindow()
 window.show()
 
 app.exec_()
+
