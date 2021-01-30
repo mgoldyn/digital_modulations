@@ -1,0 +1,1 @@
+nvcc -Xcompiler -fPIC -shared -o main2.dll main.c src\psk_common.c src\qpsk.c src\bpsk.c
