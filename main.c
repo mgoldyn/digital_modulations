@@ -4,6 +4,7 @@
 #include "inc/consts.h"
 #include "inc/psk_common.h"
 #include "inc/amp_mod.h"
+#include "inc/freq_mod.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +25,7 @@ C_DELLEXPORT int32_t init_func(float amplitude,
     char bps[] = "bpsk";
     char qps[] = "qpsk";
     char am[]  = "am";
+    char fm[]  = "fm";
     
     if(!strcmp(mod, bps))
     {
@@ -71,6 +73,22 @@ C_DELLEXPORT int32_t init_func(float amplitude,
 
         init_psk_cos_lut(&params, psk_cos_lut);
         modulate_am(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
+        printf("mod = %s\n", mod);
+    }
+    else if(!strcmp(mod, fm))
+    {
+        const psk_params params = {amplitude, freq, cos_factor_idx};
+        int32_t n_cos_samples   = get_n_cos_samples(params.cos_factor_idx);
+
+        psk_cos_lut    = malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
+        modulated_data = malloc(sizeof(float) * n_cos_samples * n_bits);
+        if(!psk_cos_lut || !modulated_data)
+        {
+            return 1;
+        }
+
+        init_fm_cos_lut(&params, psk_cos_lut);
+        modulate_fm(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
         printf("mod = %s\n", mod);
     }
     else
