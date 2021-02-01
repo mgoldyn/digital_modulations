@@ -8,12 +8,6 @@ from PyQt5 import QtWidgets
 import sys
 import pyqtgraph as pg
 
-modulation_dll = cdll.LoadLibrary("C:\\magisterka\\git\\digital_modulations\\main2.dll")
-amplitude = c_float(1)
-freq = c_float(1)
-cos_factor_idx = c_int(1)
-modulation_dll.init_func(amplitude, freq, cos_factor_idx)
-
 class modulated_data_window(QWidget):
     def __init__(self):
         super().__init__()
@@ -32,25 +26,63 @@ class modulated_data_window(QWidget):
         self.graphWidget.clear()
         self.graphWidget.plot(data)
 
+class modulation_c():
+    def __init__(self):
+        super().__init__()
+        self.amplitude = c_float(1)
+        self.frequency = c_float(1)
+        self.cos_factor_idx = c_int(2)
+        self.n_bits_c = c_int(0)
+        self.n_bits_py = 0
+        self.mod_type = ""
+        self.bit_stream = 0
+        self.n_samples_factor = 0
+        self.modulation_dll = cdll.LoadLibrary("C:\\magisterka\\git\\digital_modulations\\main2.dll")
+        self.mod_data_window = modulated_data_window()
+
+    def set_mod_parameters(self, amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream):
+        if mod_type == "qpsk":
+            self.n_samples_factor = 2
+        else:
+            self.n_samples_factor = 1
+
+        self.amplitude = c_float(amp)
+        self.frequency = c_float(freq)
+        self.cos_factor_idx = c_int(cos_fac_idx)
+        self.n_bits_c = c_int(n_bits)
+        self.n_bits_py = n_bits
+        self.bit_stream = bit_stream
+        self.mod_type = create_string_buffer(mod_type.encode('utf-8'))
+
+    def modulate(self, amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream):
+
+        self.set_mod_parameters(amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream)
+
+        status = self.modulation_dll.init_func(self.amplitude, self.frequency, self.cos_factor_idx, self.n_bits_c, byref(self.bit_stream),
+                                          self.mod_type)
+        if status == 0:
+            n_samples = int(180 * cos_fac_idx / self.n_samples_factor) * n_bits
+            type_for_probki = c_float * n_samples
+
+            modulated_data_ptr = POINTER(type_for_probki).in_dll(self.modulation_dll, "modulated_data").contents
+            modulated_data = np.array(modulated_data_ptr[:])
+
+            self.mod_data_window.show_mod_data(modulated_data)
+            self.mod_data_window.show()
+
+            self.modulation_dll.memory_free()
+        else:
+            print("Modulation exit with error code = ", status)
+
 class MainWindow(QMainWindow):
     factor = 0
-    modulation = ""
+    modulation_type = ""
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.factor = 0
         self.setWindowTitle("Digital modulations")
         self.setGeometry(600, 600, 600, 600)
-
-        toolbar = QToolBar("Toolbar")
-        self.addToolBar(toolbar)
-
-        self.button_action = QAction("Button", self)
-        self.button_action.setStatusTip("This is button")
-        self.button_action.triggered.connect(self.onMyToolBarButtonClick)
-        self.button_action.setCheckable(True)
-
-        toolbar.addAction(self.button_action)
 
         self.start_button = QtWidgets.QPushButton(self)
         self.start_button.setText("Start modulation")
@@ -87,8 +119,6 @@ class MainWindow(QMainWindow):
         self.text_edit = QTextEdit(self)
         self.text_edit.move(400, 200)
 
-        self.mod_data_window = modulated_data_window()
-
         self.bpsk_checkbox = QCheckBox("bpsk", self)
         self.bpsk_checkbox.move(20, 20)
         self.qpsk_checkbox = QCheckBox("qpsk", self)
@@ -103,6 +133,7 @@ class MainWindow(QMainWindow):
         self.mod_checkbox.addButton(self.qpsk_checkbox, 2)
         self.mod_checkbox.addButton(self.am_checkbox, 3)
         self.mod_checkbox.addButton(self.fm_checkbox, 4)
+        self.modulation = modulation_c()
 
     def show_file_dialog(self):
         fname = QFileDialog.getOpenFileName(self, "Open file", "C:\\magisterka\\git\\digital_modulations\\")
@@ -118,46 +149,25 @@ class MainWindow(QMainWindow):
     def start_clicked(self):
         self.get_modulation_type()
 
-        amplitude2 = c_float(self.amp_spinbox.value())
-        freq2 = c_float(self.freq_spinbox.value())
-        cos_factor_idx2 = c_int(2)
+        amplitude = self.amp_spinbox.value()
+        freq = self.freq_spinbox.value()
+        cos_factor_idx = 2
         bits = []
         input_text = self.text_edit.toPlainText()
         for i in input_text :
             if i == "0" or i == "1":
                 bits.append(int(i))
-        seq = c_int * len(bits)
+        n_bits = len(bits)
+        seq = c_int * n_bits
         bit_stream = seq(*bits)
-        n_samples = c_int(len(bits))
-        n_out_samples_factor = 0
-        if self.modulation == "bpsk":
-            n_out_samples_factor = len(bits)
-        elif self.modulation == "qpsk":
-            n_out_samples_factor = int(len(bits) / 2)
-        status = modulation_dll.init_func(amplitude2, freq2, cos_factor_idx2, n_samples, byref(bit_stream), create_string_buffer(self.modulation.encode('utf-8')))
-        if status == 0:
-            self.factor = 2
-            n_samples = 180 * self.factor * n_out_samples_factor
-            type_for_probki = c_float * n_samples
 
-            modulated_data_ptr = POINTER(type_for_probki).in_dll(modulation_dll, "modulated_data").contents
-            modulated_data = np.array(modulated_data_ptr[:])
-
-            self.mod_data_window.show_mod_data(modulated_data)
-            self.mod_data_window.show()
-
-            modulation_dll.memory_free()
-        else:
-            print("NIE UDALO SIE, ERROR_CODE = ", status)
-
-    def onMyToolBarButtonClick(self, s):
-        print(s)
+        self.modulation.modulate(amplitude, freq, cos_factor_idx, n_bits, self.modulation_type, bit_stream)
 
     def get_modulation_type(self):
 
         for button in self.mod_checkbox.buttons():
             if button.isChecked():
-                self.modulation = button.text()
+                self.modulation_type = button.text()
 
 
 app = QApplication(sys.argv)
