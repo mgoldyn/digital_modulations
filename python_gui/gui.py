@@ -17,6 +17,8 @@ class modulated_data_window(QWidget):
         self.label = QLabel("Modulated data")
         self.setLayout(layout)
         self.graphWidget = pg.PlotWidget()
+        self.graphWidget.setLabel("left", "Amplitude [V]")
+        self.graphWidget.setLabel("bottom", "N")
 
         layout.addWidget(self.graphWidget)
 
@@ -118,6 +120,10 @@ class MainWindow(QMainWindow):
 
         self.text_edit = QTextEdit(self)
         self.text_edit.move(400, 200)
+
+        self.text_input_label = QtWidgets.QLabel(self)
+        self.text_input_label.setText("Input bits")
+        self.text_input_label.move(400, 170)
 
         self.bpsk_checkbox = QCheckBox("bpsk", self)
         self.bpsk_checkbox.move(20, 20)
