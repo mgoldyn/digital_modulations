@@ -14,25 +14,17 @@ void init_fm_cos_lut(const psk_params* restrict params, float* restrict signal_l
 
     const float period = 1 / freq;
     const float cos_elem_part = period / samples_factor;
-
-    const float freq_0 = freq * 2;
-    const float period_0 = 1 / freq_0;
-    const float cos_elem_part_0 = period_0 / samples_factor;
     
     int32_t sig_idx = 0;
     for(; sig_idx <= samples_factor; ++sig_idx)
     {
-        signal_lut[sig_idx] = amplitude * cos(2 * PI * freq_0 * sig_idx * cos_elem_part_0);
-        printf("c0[%d] = %f\n", sig_idx, signal_lut[sig_idx]);
+        signal_lut[sig_idx] = amplitude * cos(2 * PI * freq * sig_idx * cos_elem_part * 4);
         
     }
     for(; sig_idx <= samples_factor * 2; ++sig_idx)
     {
         signal_lut[sig_idx] = amplitude * cos(2 * PI * freq * sig_idx * cos_elem_part);
-        printf("c1[%d] = %f\n", sig_idx, signal_lut[sig_idx]);
     }
-
-    
 }
 
 static void set_freq(int32_t n_cos_samples, int32_t freq_sig_idx, const float* restrict signal_data, float* restrict modulated_signal)
