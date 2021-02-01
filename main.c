@@ -1,11 +1,13 @@
 #include "inc/qpsk.h"
-// #include "inc/bpsk.h"
+#include "inc/bpsk.h"
 #include "inc/types.h"
 #include "inc/consts.h"
 #include "inc/psk_common.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 
 C_DELLEXPORT float* psk_cos_lut;
 C_DELLEXPORT float* modulated_data;
@@ -15,20 +17,48 @@ C_DELLEXPORT int32_t init_func(float amplitude,
                                float freq,
                                int32_t cos_factor_idx,
                                int32_t n_bits,
-                               int32_t* bit_stream)
+                               int32_t* bit_stream,
+                               char* mod)
 {
-    const psk_params params = {amplitude, freq, cos_factor_idx};
-    int32_t n_cos_samples   = get_n_cos_samples(params.cos_factor_idx);
-
-    psk_cos_lut    = malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
-    modulated_data = malloc(sizeof(float) * n_cos_samples * n_bits);
-    if(!psk_cos_lut || !modulated_data)
+    char bps[] = "bpsk";
+    char qps[] = "qpsk";
+    
+    if(!strcmp(mod, bps))
     {
-        return 0;
-    }
+        const psk_params params = {amplitude, freq, cos_factor_idx};
+        int32_t n_cos_samples   = get_n_cos_samples(params.cos_factor_idx);
 
-    init_psk_cos_lut(&params, psk_cos_lut);
-    modulate_qpsk(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
+        psk_cos_lut    = malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
+        modulated_data = malloc(sizeof(float) * n_cos_samples * n_bits);
+        if(!psk_cos_lut || !modulated_data)
+        {
+            return 1;
+        }
+
+        init_psk_cos_lut(&params, psk_cos_lut);
+        modulate_bpsk(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
+        printf("mod = %s\n", mod);
+    }
+    else if(!strcmp(mod, qps))
+    {
+        const psk_params params = {amplitude, freq, cos_factor_idx};
+        int32_t n_cos_samples   = get_n_cos_samples(params.cos_factor_idx);
+
+        psk_cos_lut    = malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
+        modulated_data = malloc(sizeof(float) * n_cos_samples * n_bits / 2);
+        if(!psk_cos_lut || !modulated_data)
+        {
+            return 1;
+        }
+
+        init_psk_cos_lut(&params, psk_cos_lut);
+        modulate_qpsk(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
+        printf("mod = %s\n", mod);
+    }
+    else
+    {
+        return 1;
+    }
     
     return 0;
 }
