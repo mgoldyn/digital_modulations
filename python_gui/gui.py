@@ -8,6 +8,7 @@ from PyQt5 import QtWidgets
 import sys
 import pyqtgraph as pg
 
+
 class modulated_data_window(QWidget):
     def __init__(self):
         super().__init__()
@@ -21,7 +22,6 @@ class modulated_data_window(QWidget):
         self.graphWidget.setLabel("bottom", "N")
 
         layout.addWidget(self.graphWidget)
-
 
     def show_mod_data(self, data):
 
@@ -39,8 +39,10 @@ class modulation_c():
         self.mod_type = ""
         self.bit_stream = 0
         self.n_samples_factor = 0
-        self.modulation_dll = cdll.LoadLibrary("C:\\magisterka\\git\\digital_modulations\\main2.dll")
+        self.modulation_dll = cdll.LoadLibrary("D:\\magisterka\\git\\digital_modulations\\main2.dll")
         self.mod_data_window = modulated_data_window()
+        self.n_samples = 0
+        self.demodulated_data = []
 
     def set_mod_parameters(self, amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream):
         if mod_type == "qpsk":
@@ -64,10 +66,42 @@ class modulation_c():
                                           self.mod_type)
         if status == 0:
             n_samples = int(180 * cos_fac_idx / self.n_samples_factor) * n_bits
+            self.n_samples = n_samples
             type_for_probki = c_float * n_samples
 
             modulated_data_ptr = POINTER(type_for_probki).in_dll(self.modulation_dll, "modulated_data").contents
             modulated_data = np.array(modulated_data_ptr[:])
+
+            self.demodulated_data = []
+            if mod_type == "bpsk":
+                for i in range(n_bits):
+                    self.demodulated_data.append(int(modulated_data[360 * i + 180] == amp))
+            elif mod_type == "qpsk":
+                for i in range(int(n_bits / 2)):
+                    if modulated_data[360 * i + 45] == -1 * amp:
+                        self.demodulated_data.append(1)
+                        self.demodulated_data.append(1)
+                    elif modulated_data[360 * i + 45] == 1 * amp:
+                        self.demodulated_data.append(0)
+                        self.demodulated_data.append(0)
+                    elif modulated_data[360 * i + 270] < 0 and  modulated_data[360 * i + 359] < 0:
+                        self.demodulated_data.append(1)
+                        self.demodulated_data.append(0)
+                    else:
+                        self.demodulated_data.append(0)
+                        self.demodulated_data.append(1)
+            elif mod_type == "am":
+                for i in range(n_bits):
+                    self.demodulated_data.append(int(modulated_data[360 * i + 180] == -amp))
+
+            elif mod_type == "fm":
+                for i in range(n_bits):
+                    self.demodulated_data.append(int(modulated_data[360 * i + 45] !=
+                                                     - modulated_data[360 * i + 90]))
+
+            print("modulated data")
+            for i in range(n_bits):
+                print(self.demodulated_data[i])
 
             self.mod_data_window.show_mod_data(modulated_data)
             self.mod_data_window.show()
@@ -75,6 +109,8 @@ class modulation_c():
             self.modulation_dll.memory_free()
         else:
             print("Modulation exit with error code = ", status)
+
+
 
 class MainWindow(QMainWindow):
     factor = 0
