@@ -1,5 +1,6 @@
-#include "../inc/qpsk.h"
-#include "../inc/consts.h"
+#include "..\inc\qpsk.h"
+#include "..\inc\consts.h"
+#include "..\inc\psk_common.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -8,12 +9,12 @@
 #define QPSK_PHASE_10 225
 #define QPSK_PHASE_00 315
 
-C_DELLEXPORT
+CUDA_DELLEXPORT
 void modulate_qpsk(int32_t n_cos_samples,
                    int32_t n_bits,
-                   const int32_t* restrict bit_stream,
-                   const float* restrict signal_data,
-                   float* restrict modulated_signal)
+                   const int32_t*  bit_stream,
+                   const float*  signal_data,
+                   float*  modulated_signal)
 {
     int32_t bit_idx = 0, data_idx = 0;
     int32_t phase_shift;

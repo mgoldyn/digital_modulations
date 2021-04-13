@@ -1,10 +1,11 @@
-#include "inc/qpsk.h"
-#include "inc/bpsk.h"
-#include "inc/types.h"
-#include "inc/consts.h"
-#include "inc/psk_common.h"
-#include "inc/amp_mod.h"
-#include "inc/freq_mod.h"
+#include "inc\qpsk.h"
+#include "inc\bpsk.h"
+#include "inc\types.h"
+#include "inc\consts.h"
+#include "inc\psk_common.h"
+#include "inc\amp_mod.h"
+#include "inc\freq_mod.h"
+#include "inc\bpsk_cuda.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,7 +16,7 @@ C_DELLEXPORT float* psk_cos_lut;
 C_DELLEXPORT float* modulated_data;
 C_DELLEXPORT float* dynamic_data;
 
-C_DELLEXPORT int32_t init_func(float amplitude,
+CUDA_DELLEXPORT int32_t init_func(float amplitude,
                                float freq,
                                int32_t cos_factor_idx,
                                int32_t n_bits,
@@ -32,8 +33,8 @@ C_DELLEXPORT int32_t init_func(float amplitude,
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples   = get_n_cos_samples(params.cos_factor_idx);
 
-        psk_cos_lut    = malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
-        modulated_data = malloc(sizeof(float) * n_cos_samples * n_bits);
+        psk_cos_lut    = (float*)malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
+        modulated_data = (float*)malloc(sizeof(float) * n_cos_samples * n_bits);
         if(!psk_cos_lut || !modulated_data)
         {
             return 1;
@@ -48,8 +49,8 @@ C_DELLEXPORT int32_t init_func(float amplitude,
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples   = get_n_cos_samples(params.cos_factor_idx);
 
-        psk_cos_lut    = malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
-        modulated_data = malloc(sizeof(float) * n_cos_samples * n_bits / 2);
+        psk_cos_lut    = (float*)malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
+        modulated_data = (float*)malloc(sizeof(float) * n_cos_samples * n_bits / 2);
         if(!psk_cos_lut || !modulated_data)
         {
             return 1;
@@ -64,8 +65,8 @@ C_DELLEXPORT int32_t init_func(float amplitude,
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples   = get_n_cos_samples(params.cos_factor_idx);
 
-        psk_cos_lut    = malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
-        modulated_data = malloc(sizeof(float) * n_cos_samples * n_bits);
+        psk_cos_lut    = (float*)malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
+        modulated_data = (float*)malloc(sizeof(float) * n_cos_samples * n_bits);
         if(!psk_cos_lut || !modulated_data)
         {
             return 1;
@@ -80,8 +81,8 @@ C_DELLEXPORT int32_t init_func(float amplitude,
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples   = get_n_cos_samples(params.cos_factor_idx);
 
-        psk_cos_lut    = malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
-        modulated_data = malloc(sizeof(float) * n_cos_samples * n_bits);
+        psk_cos_lut    = (float*)malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
+        modulated_data = (float*)malloc(sizeof(float) * n_cos_samples * n_bits);
         if(!psk_cos_lut || !modulated_data)
         {
             return 1;
@@ -99,7 +100,7 @@ C_DELLEXPORT int32_t init_func(float amplitude,
     return 0;
 }
 
-C_DELLEXPORT void memory_free()
+CUDA_DELLEXPORT void memory_free()
 {
    free(dynamic_data);
    free(psk_cos_lut);

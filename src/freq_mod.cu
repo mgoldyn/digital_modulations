@@ -1,12 +1,12 @@
-#include "../inc/freq_mod.h"
-#include "../inc/consts.h"
+#include "..\inc\freq_mod.h"
+#include "..\inc\consts.h"
 
 #include "math.h"
 
 #define FM_FREQ_0 0
 #define FM_FREQ_1 1
 
-void init_fm_cos_lut(const psk_params* restrict params, float* restrict signal_lut)
+void init_fm_cos_lut(const psk_params*  params, float*  signal_lut)
 {
     const float amplitude = params->amplitude;
     const float freq = params->freq;
@@ -27,7 +27,7 @@ void init_fm_cos_lut(const psk_params* restrict params, float* restrict signal_l
     }
 }
 
-static void set_freq(int32_t n_cos_samples, int32_t freq_sig_idx, const float* restrict signal_data, float* restrict modulated_signal)
+static void set_freq(int32_t n_cos_samples, int32_t freq_sig_idx, const float*  signal_data, float*  modulated_signal)
 {
     int32_t sig_idx = 0;
     const int32_t car_signal_offset = n_cos_samples * freq_sig_idx;
@@ -39,9 +39,9 @@ static void set_freq(int32_t n_cos_samples, int32_t freq_sig_idx, const float* r
 
 void modulate_fm(int32_t n_cos_samples,
                  int32_t n_bits,
-                 const int32_t* restrict bit_stream,
-                 const float* restrict signal_data,
-                 float* restrict modulated_signal)
+                 const int32_t*  bit_stream,
+                 const float*  signal_data,
+                 float*  modulated_signal)
 {
     int32_t bit_idx = 0;
     int32_t freq_sig_idx;

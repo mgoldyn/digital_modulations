@@ -1,1 +1,1 @@
-nvcc -Xcompiler -fPIC -shared -o main2.dll main.c src\psk_common.c src\qpsk.c src\bpsk.c src\amp_mod.c src\freq_mod.c
+nvcc -shared -o main2.dll main.cu src\psk_common.cu src\qpsk.cu src\bpsk_cuda.cu src\amp_mod.cu src\freq_mod.cu src\bpsk.cu
