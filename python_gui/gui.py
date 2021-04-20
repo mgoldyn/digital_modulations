@@ -7,6 +7,7 @@ from PyQt5.QtCore import *
 from PyQt5 import QtWidgets
 import sys
 import pyqtgraph as pg
+from timeit import default_timer as timer
 
 
 class modulated_data_window(QWidget):
@@ -45,10 +46,11 @@ class modulation_c():
         self.demodulated_data = []
 
     def set_mod_parameters(self, amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream):
-        if mod_type == "qpsk":
+        if mod_type == "qpsk" or mod_type == "qpskc":
             self.n_samples_factor = 2
         else:
             self.n_samples_factor = 1
+        print(mod_type)
 
         self.amplitude = c_float(amp)
         self.frequency = c_float(freq)
@@ -61,9 +63,12 @@ class modulation_c():
     def modulate(self, amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream):
 
         self.set_mod_parameters(amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream)
+        start = timer()
 
         status = self.modulation_dll.init_func(self.amplitude, self.frequency, self.cos_factor_idx, self.n_bits_c, byref(self.bit_stream),
                                           self.mod_type)
+        end = timer()
+        print("time = ", end - start)
         if status == 0:
             n_samples = int(180 * cos_fac_idx / self.n_samples_factor) * n_bits
             self.n_samples = n_samples
@@ -73,10 +78,10 @@ class modulation_c():
             modulated_data = np.array(modulated_data_ptr[:])
 
             self.demodulated_data = []
-            if mod_type == "bpsk":
+            if mod_type == "bpsk" or mod_type == "bpskc":
                 for i in range(n_bits):
                     self.demodulated_data.append(int(modulated_data[360 * i + 180] == amp))
-            elif mod_type == "qpsk":
+            elif mod_type == "qpsk" or mod_type == "qpskc":
                 for i in range(int(n_bits / 2)):
                     if modulated_data[360 * i + 45] == -1 * amp:
                         self.demodulated_data.append(1)
@@ -94,14 +99,14 @@ class modulation_c():
                 for i in range(n_bits):
                     self.demodulated_data.append(int(modulated_data[360 * i + 180] == -amp))
 
-            elif mod_type == "fm":
+            elif mod_type == "fm" or mod_type == "fmc":
                 for i in range(n_bits):
                     self.demodulated_data.append(int(modulated_data[360 * i + 45] !=
                                                      - modulated_data[360 * i + 90]))
 
-            print("modulated data")
-            for i in range(n_bits):
-                print(self.demodulated_data[i])
+            # print("modulated data")
+            # for i in range(n_bits):
+            #     print(self.demodulated_data[i])
 
             self.mod_data_window.show_mod_data(modulated_data)
             self.mod_data_window.show()
@@ -161,20 +166,34 @@ class MainWindow(QMainWindow):
         self.text_input_label.setText("Input bits")
         self.text_input_label.move(400, 170)
 
+        checkbox_location = 20
+        checkbox_width = 20
         self.bpsk_checkbox = QCheckBox("bpsk", self)
-        self.bpsk_checkbox.move(20, 20)
+        self.bpsk_checkbox.move(20, checkbox_location)
+        self.bpsk_cuda_checkbox = QCheckBox("bpskc", self)
+        self.bpsk_cuda_checkbox.move(20, checkbox_location + checkbox_width * 1)
         self.qpsk_checkbox = QCheckBox("qpsk", self)
-        self.qpsk_checkbox.move(20, 40)
+        self.qpsk_checkbox.move(20, checkbox_location + checkbox_width * 2)
+        self.qpsk_cuda_checkbox = QCheckBox("qpskc", self)
+        self.qpsk_cuda_checkbox.move(20, checkbox_location + checkbox_width * 3)
         self.am_checkbox = QCheckBox("am", self)
-        self.am_checkbox.move(20, 60)
+        self.am_checkbox.move(20, checkbox_location + checkbox_width * 4)
+        self.am_cuda_checkbox = QCheckBox("amc", self)
+        self.am_cuda_checkbox.move(20, checkbox_location + checkbox_width * 5)
         self.fm_checkbox = QCheckBox("fm", self)
-        self.fm_checkbox.move(20, 80)
+        self.fm_checkbox.move(20, checkbox_location + checkbox_width * 6)
+        self.fm_cuda_checkbox = QCheckBox("fmc", self)
+        self.fm_cuda_checkbox.move(20, checkbox_location + checkbox_width * 7)
 
         self.mod_checkbox = QButtonGroup()
         self.mod_checkbox.addButton(self.bpsk_checkbox, 1)
         self.mod_checkbox.addButton(self.qpsk_checkbox, 2)
         self.mod_checkbox.addButton(self.am_checkbox, 3)
         self.mod_checkbox.addButton(self.fm_checkbox, 4)
+        self.mod_checkbox.addButton(self.bpsk_cuda_checkbox, 5)
+        self.mod_checkbox.addButton(self.qpsk_cuda_checkbox, 6)
+        self.mod_checkbox.addButton(self.fm_cuda_checkbox, 7)
+        self.mod_checkbox.addButton(self.am_cuda_checkbox, 8)
         self.modulation = modulation_c()
 
     def show_file_dialog(self):

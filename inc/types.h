@@ -4,6 +4,8 @@
 #define C_DELLEXPORT __declspec(dllexport)
 #define CUDA_DELLEXPORT extern "C" __declspec(dllexport)
 
+#define C_EXTERN extern "C"
+
 typedef int int32_t;
 typedef unsigned int uint32_t;
 
