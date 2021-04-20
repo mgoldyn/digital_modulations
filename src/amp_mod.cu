@@ -53,8 +53,8 @@ void modulate_am_cuda(int32_t n_cos_samples,
     float* d_modulated_signal;
     float* d_signal_data;
     cudaMalloc((void**)&d_modulated_signal, sizeof(float) * n_cos_samples * n_bits);
-    cudaMalloc((void**)&d_signal_data, sizeof(float) * n_cos_samples * 2);
-    cudaMemcpy(d_signal_data, signal_data, sizeof(float) * n_cos_samples * 2, cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&d_signal_data, sizeof(float) * n_cos_samples);
+    cudaMemcpy(d_signal_data, signal_data, sizeof(float) * n_cos_samples, cudaMemcpyHostToDevice);
 
     int threadsPerBlock = 256;
     int blocksPerGrid = (n_bits * n_cos_samples + threadsPerBlock - 1) / threadsPerBlock;

@@ -1,1 +1,1 @@
-nvcc  main.cu src\psk_common.cu src\qpsk.cu src\bpsk_cuda.cu src\amp_mod.cu src\freq_mod.cu src\bpsk.cu -shared -o main2.dll
+nvcc  main.cu src\psk_common.cu src\qpsk.cu src\bpsk_cuda.cu src\amp_mod.cu src\freq_mod.cu src\bpsk.cu src\demodulate.cu -shared -o main2.dll

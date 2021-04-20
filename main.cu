@@ -6,6 +6,7 @@
 #include "inc\amp_mod.h"
 #include "inc\freq_mod.h"
 #include "inc\bpsk_cuda.h"
+#include "inc\demodulate.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,6 +68,16 @@ C_DELLEXPORT int32_t init_func(float amplitude,
         init_psk_cos_lut(&params, psk_cos_lut);
         modulate_qpsk(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
         printf("mod C = %s\n", mod);
+        int32_t dupsko[4];
+        demodulate(mod, 0, 0, psk_cos_lut, modulated_data, n_bits,n_cos_samples,dupsko);
+        int32_t dupsko_idx = 0;
+        for(; dupsko_idx < n_bits; ++dupsko_idx)
+        {
+            if(dupsko[dupsko_idx] == bit_stream[dupsko_idx])
+            {
+                printf("\nzayebiscie\n");
+            }
+        }
     }
     else if(!strcmp(mod, qpsc))
     {
@@ -187,45 +198,47 @@ C_DELLEXPORT void memory_free()
 
 int main(void)
 {
-    // printf("dupa");
-    // int32_t bit_stream[] = {0, 1, 1, 0, 0, 0, 1, 1};
-    // psk_params params = {1, 5, 2};
-    // int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
-    // psk_cos_lut    = (float*)malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
-    // modulated_data =  (float*)malloc(sizeof(float) * n_cos_samples * 8);
-    // init_psk_cos_lut(&params, psk_cos_lut);
-    // modulate_bpsk_cuda(n_cos_samples, 8, bit_stream, psk_cos_lut, modulated_data);
-    // printf("dupa");
-    // int32_t i = 0;
+    int32_t bit_stream[] = {1,1, 0, 1};//,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1};
+    char bps[] = "qpsk";
+    int32_t n_bits = 4;
 
-    int32_t bit_stream[] = {0,1,0,1};//,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1};
-    char bps[] = "fmc";
-    cudaFree(0);
     init_func(1,
         1,
         2,
-        4,
-        bit_stream,
-        bps);
-         int i = 0;
-             for(; i < 360; ++i)
-     {
-         printf("mod[%d] = %f \n", i, modulated_data[i]);
-     }
-    memory_free();
-//    int32_t bit_stream[] = {0,1,0,1};//,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1};
-    char bps2[] = "fm";
-    cudaFree(0);
-    init_func(1,
-              1,
-              2,
-              4,
+              n_bits,
               bit_stream,
-              bps2);
-    i = 0;
-    for(; i < 360; ++i)
+              bps);
+    int i = 0;
+//    for(; i < 360; ++i)
+//    {
+//        printf("mod[%d] = %f \n", i, modulated_data[i]);
+//    }
+
+             int32_t demodulated_bits[4];
+    demodulate(bps,
+               0,
+               0,
+               psk_cos_lut,
+               modulated_data,
+               n_bits,
+               360,
+               &demodulated_bits[0]);
+
+    int32_t dupsko = 0;
+    for(i = 0; i < n_bits; ++i)
     {
-        printf("mod[%d] = %f \n", i, modulated_data[i]);
+        if(demodulated_bits[i] != bit_stream[i])
+        {dupsko = 1;
+            printf("nie działa idx = %d out = %d, in = %d\n",i, demodulated_bits[i] ,bit_stream[i]);
+        }
+    }
+    if(dupsko)
+    {
+        printf("nie działa\n");
+    }
+    else
+    {
+        printf("dziala\n");
     }
 
     memory_free();
