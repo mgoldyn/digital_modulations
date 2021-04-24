@@ -232,9 +232,11 @@ C_DELLEXPORT void memory_free()
     {
         free(modulated_data);
     }
+}
 
-
-
+C_DELLEXPORT void cuda_dummy_free()
+{
+    cudaFree(0);
 }
 }
 

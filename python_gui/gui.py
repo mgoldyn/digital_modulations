@@ -65,6 +65,7 @@ class modulation_c():
     def modulate(self, amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream):
 
         self.set_mod_parameters(amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream)
+        self.modulation_dll.cuda_dummy_free()
         start = timer()
 
         status = self.modulation_dll.init_func(self.amplitude, self.frequency, self.cos_factor_idx, self.n_bits_c, byref(self.bit_stream),
