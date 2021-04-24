@@ -102,16 +102,74 @@ calc_mod_sig(int32_t n_cos_samples,
     }
 }
 
-__global__ void
-set_phase_and_amp_16qam(int32_t n_cos_samples,
-                        int32_t* bit_stream,
-                        float* d_signal_data,
-                        float* d_modulated_signal)
+//__global__ void
+//set_phase_and_amp_16qam(
+//        int32_t n_cos_samples,
+//                        int32_t* bit_stream,
+//                        float* d_signal_data,
+//                        float* d_modulated_signal)
+//{
+//    int32_t sig_idx = 0;
+//    for(; sig_idx < n_bits; sig_idx += 4;)
+//    {
+//        int32_t bit_idx = sig_idx;
+//
+//        int32_t phase_shift;
+//        float amp_factor;
+//
+//        if (!bit_stream[bit_idx]) {
+//            if (!bit_stream[bit_idx + 1]) {
+//                phase_shift = _16QAM_PHASE_00;
+//            } else {
+//                phase_shift = _16QAM_PHASE_01;
+//            }
+//        } else {
+//            if (!bit_stream[bit_idx + 1]) {
+//                phase_shift = _16QAM_PHASE_10;
+//            } else {
+//                phase_shift = _16QAM_PHASE_11;
+//            }
+//        }
+//
+//        if (!bit_stream[bit_idx + 2]) {
+//            if (!bit_stream[bit_idx + 3]) {
+//                amp_factor = _16QAM_AMP_00;
+//            } else {
+//                amp_factor = _16QAM_AMP_01;
+//            }
+//        } else {
+//            if (!bit_stream[bit_idx + 3]) {
+//                amp_factor = _16QAM_AMP_10;
+//            } else {
+//                amp_factor = _16QAM_AMP_11;
+//            }
+//        }
+//        const int32_t scaled_phase_shift = (int32_t)((float)phase_shift * (((float)n_cos_samples)/ N_MAX_DEGREE));
+//
+//        int32_t threadsPerBlock = 8;
+//        int32_t blocksPerGrid   = ( n_cos_samples + threadsPerBlock - 1) / threadsPerBlock;
+//
+//        calc_mod_sig<<<blocksPerGrid, threadsPerBlock>>>(n_cos_samples, scaled_phase_shift, amp_factor, d_signal_data, &d_modulated_signal[sig_idx * n_cos_samples]);
+//    }
+//}
+
+void modulate_16qam_cuda(int32_t n_cos_samples,
+                         int32_t n_bits,
+                         const int32_t* bit_stream,
+                         const float* signal_data,
+                         float*  modulated_signal)
 {
-    int32_t sig_idx = blockDim.x * blockIdx.x + threadIdx.x;
-    if(sig_idx < 4)
+    float* d_modulated_signal;
+    float* d_signal_data;
+
+    cudaMalloc((void**)&d_modulated_signal, sizeof(float) * n_cos_samples * n_bits/4);
+    cudaMalloc((void**)&d_signal_data, sizeof(float) * n_cos_samples * 2);
+    cudaMemcpy(d_signal_data, signal_data, sizeof(float) * n_cos_samples * 2, cudaMemcpyHostToDevice);
+
+    int32_t sig_idx = 0;
+    for(; sig_idx < n_bits; sig_idx += 4)
     {
-        int32_t bit_idx = sig_idx * 4;
+        int32_t bit_idx = sig_idx;
 
         int32_t phase_shift;
         float amp_factor;
@@ -149,33 +207,10 @@ set_phase_and_amp_16qam(int32_t n_cos_samples,
         int32_t blocksPerGrid   = ( n_cos_samples + threadsPerBlock - 1) / threadsPerBlock;
 
         calc_mod_sig<<<blocksPerGrid, threadsPerBlock>>>(n_cos_samples, scaled_phase_shift, amp_factor, d_signal_data, &d_modulated_signal[sig_idx * n_cos_samples]);
-    }
-}
-
-void modulate_16qam_cuda(int32_t n_cos_samples,
-                         int32_t n_bits,
-                         const int32_t* bit_stream,
-                         const float* signal_data,
-                         float*  modulated_signal)
-{
-    float* d_modulated_signal;
-    float* d_signal_data;
-    int32_t* d_bit_stream;
-
-    cudaMalloc((void**)&d_modulated_signal, sizeof(float) * n_cos_samples * n_bits);
-    cudaMalloc((void**)&d_signal_data, sizeof(float) * n_cos_samples * 2);
-    cudaMalloc((void**)&d_bit_stream, sizeof(int32_t) * n_bits);
-    cudaMemcpy(d_signal_data, signal_data, sizeof(float) * n_cos_samples * 2, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_bit_stream, bit_stream, sizeof(int32_t) * n_bits, cudaMemcpyHostToDevice);
-
-    int32_t i = 0;
-    for(; i < n_bits; i += 4)
-    {
-        set_phase_and_amp_16qam<<<1, 4>>>(n_cos_samples, &d_bit_stream[i * 16], d_signal_data, &d_modulated_signal[n_cos_samples * i]);
+        cudaMemcpy(&modulated_signal[(sig_idx/4)*n_cos_samples], d_modulated_signal, sizeof(float) * n_cos_samples, cudaMemcpyDeviceToHost);
     }
 
-    cudaMemcpy(modulated_signal, d_modulated_signal, sizeof(float) * n_cos_samples * n_bits, cudaMemcpyDeviceToHost);
+
     cudaFree((void*)d_modulated_signal);
     cudaFree((void*)d_signal_data);
-    cudaFree((void*)d_bit_stream);
 }
