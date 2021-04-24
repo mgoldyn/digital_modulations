@@ -15,9 +15,9 @@
 #include <time.h>
 extern "C"
 {
-C_DELLEXPORT float* psk_cos_lut;
-C_DELLEXPORT float* modulated_data;
-C_DELLEXPORT float* dynamic_data;
+C_DELLEXPORT float* psk_cos_lut = NULL;
+C_DELLEXPORT float* modulated_data = NULL;
+C_DELLEXPORT float* dynamic_data = NULL;
 
 C_DELLEXPORT int32_t init_func(float amplitude,
                                float freq,
@@ -189,7 +189,7 @@ C_DELLEXPORT int32_t init_func(float amplitude,
         modulate_16qam(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
         t = clock() - t;
         double time_taken = ((double)t)/CLOCKS_PER_SEC;
-        printf("mod C = %s, time = %.30lf\n", mod, time_taken);
+        printf("mod C = %s, time = %.60lf\n", mod, time_taken);
     }
     else if(!strcmp(mod, _16_qamc))
     {
@@ -220,9 +220,21 @@ C_DELLEXPORT int32_t init_func(float amplitude,
 
 C_DELLEXPORT void memory_free()
 {
-   free(dynamic_data);
-   free(psk_cos_lut);
-   free(modulated_data);
+    if(dynamic_data != NULL)
+    {
+        free(dynamic_data);
+    }
+    if(psk_cos_lut != NULL)
+    {
+        free(psk_cos_lut);
+    }
+    if(modulated_data != NULL)
+    {
+        free(modulated_data);
+    }
+
+
+
 }
 }
 
@@ -274,7 +286,7 @@ int main(void)
                             0, 0 ,0, 1,
                             0, 0, 1, 0,
                             0, 0, 1, 1,};//,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1};
-    char bps[] = "16qamc";
+    char bps[] = "16qam";
     int32_t n_bits = 16;
     cudaFree(0);
     init_func(1,

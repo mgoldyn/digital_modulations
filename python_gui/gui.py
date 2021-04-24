@@ -48,6 +48,8 @@ class modulation_c():
     def set_mod_parameters(self, amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream):
         if mod_type == "qpsk" or mod_type == "qpskc":
             self.n_samples_factor = 2
+        elif mod_type == "16qam" or mod_type == "16qamc":
+            self.n_samples_factor = 4
         else:
             self.n_samples_factor = 1
         print(mod_type)
@@ -103,6 +105,8 @@ class modulation_c():
                 for i in range(n_bits):
                     self.demodulated_data.append(int(modulated_data[360 * i + 45] !=
                                                      - modulated_data[360 * i + 90]))
+            else:
+                self.demodulated_data.append(0)
 
             # print("modulated data")
             # for i in range(n_bits):
