@@ -184,6 +184,10 @@ class MainWindow(QMainWindow):
         self.fm_checkbox.move(20, checkbox_location + checkbox_width * 6)
         self.fm_cuda_checkbox = QCheckBox("fmc", self)
         self.fm_cuda_checkbox.move(20, checkbox_location + checkbox_width * 7)
+        self._16qam_checkbox = QCheckBox("16qam", self)
+        self._16qam_checkbox.move(20, checkbox_location + checkbox_width * 8)
+        self._16qam_cuda_checkbox = QCheckBox("16qamc", self)
+        self._16qam_cuda_checkbox.move(20, checkbox_location + checkbox_width * 9)
 
         self.mod_checkbox = QButtonGroup()
         self.mod_checkbox.addButton(self.bpsk_checkbox, 1)
@@ -194,6 +198,8 @@ class MainWindow(QMainWindow):
         self.mod_checkbox.addButton(self.qpsk_cuda_checkbox, 6)
         self.mod_checkbox.addButton(self.fm_cuda_checkbox, 7)
         self.mod_checkbox.addButton(self.am_cuda_checkbox, 8)
+        self.mod_checkbox.addButton(self._16qam_checkbox, 7)
+        self.mod_checkbox.addButton(self._16qam_cuda_checkbox, 8)
         self.modulation = modulation_c()
 
     def show_file_dialog(self):

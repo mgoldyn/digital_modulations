@@ -52,7 +52,7 @@ set_phase_shift_cuda_qpsk(int32_t scaled_phase_shift, int32_t n_cos_samples, int
 {
 
     int32_t sig_idx = blockDim.x * blockIdx.x + threadIdx.x;
-    if(sig_idx < (n_cos_samples * 2))
+    if(sig_idx < (n_cos_samples))
     {
         modulated_signal[sig_idx] = signal_data[scaled_phase_shift + sig_idx];
     }
@@ -77,8 +77,8 @@ void modulate_qpsk_cuda(int32_t n_cos_samples,
     cudaMalloc((void**)&d_signal_data, sizeof(float) * n_cos_samples * 2);
     cudaMemcpy(d_signal_data, signal_data, sizeof(float) * n_cos_samples * 2, cudaMemcpyHostToDevice);
 
-    int threadsPerBlock = 256;
-    int blocksPerGrid   = (( n_bits * n_cos_samples / 2) + threadsPerBlock - 1) / threadsPerBlock;
+    int threadsPerBlock = 8;
+    int blocksPerGrid   = ( n_cos_samples + threadsPerBlock - 1) / threadsPerBlock;
 
     int32_t bit_idx_for_cuda = 0;
     for(; bit_idx < n_bits; bit_idx += 2, ++data_idx)

@@ -60,13 +60,6 @@ void demodulate(char* mod,
                 const float* modulated_signal2 = &modulated_signal[bit_idx];
                 for(; j < n_cos_samples; ++j)
                 {
-                    printf("mgoldyn [%d][%d] %e/%e/%e/%e/%e\n", i,
-                           j,
-                           modulated_signal2[j],
-                           signal_data[315 + j],
-                           signal_data[45 + j],
-                           signal_data[225 + j],
-                           signal_data[135 + j]);
                     if(modulated_signal2[j] == signal_data[315 + j])
                     {
                         qpsk_00_counter++;
@@ -84,8 +77,6 @@ void demodulate(char* mod,
                         qpsk_11_counter++;
                     }
                 }
-                printf("mgoldyn 0 = %d, 1 = %d",  (int32_t)(qpsk_10_counter + qpsk_11_counter >  qpsk_00_counter + qpsk_01_counter),
-                       (int32_t)(qpsk_10_counter + qpsk_00_counter < qpsk_11_counter + qpsk_01_counter));
                 demodulated_bits[k] = (int32_t)((qpsk_10_counter + qpsk_11_counter) >  (qpsk_00_counter + qpsk_01_counter));
                 demodulated_bits[k + 1] = (int32_t)((qpsk_10_counter + qpsk_00_counter) < (qpsk_11_counter + qpsk_01_counter));
                 k += 2;
