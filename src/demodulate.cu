@@ -1,8 +1,107 @@
 #include "..\inc\demodulate.h"
 #include "..\inc\consts.h"
+#include "..\inc\qam.h"
+#include "..\inc\psk_common.h"
 
 #include <string.h>
 #include <stdio.h>
+
+enum _16_qam_bits
+{
+    _16_qam_00 = 0,
+    _16_qam_01 = 1,
+    _16_qam_10 = 2,
+    _16_qam_11 = 3,
+    _16_qam_size = 4
+};
+
+static inline void demodulate_16_qam(float modulated_signal,
+                                     const float* ref_signal,
+                                     int32_t* phase_ctr,
+                                     int32_t* amp_ctr)
+{
+    if (modulated_signal == _16QAM_AMP_00 * ref_signal[_16QAM_PHASE_00])
+    {
+        amp_ctr[_16_qam_00]++;
+        phase_ctr[_16_qam_00]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_01 * ref_signal[_16QAM_PHASE_00])
+    {
+        amp_ctr[_16_qam_01]++;
+        phase_ctr[_16_qam_00]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_10 * ref_signal[_16QAM_PHASE_00])
+    {
+        amp_ctr[_16_qam_10]++;
+        phase_ctr[_16_qam_00]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_11 * ref_signal[_16QAM_PHASE_00])
+    {
+        amp_ctr[_16_qam_11]++;
+        phase_ctr[_16_qam_00]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_00 * ref_signal[_16QAM_PHASE_01])
+    {
+        amp_ctr[_16_qam_00]++;
+        phase_ctr[_16_qam_01]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_01 * ref_signal[_16QAM_PHASE_01])
+    {
+        amp_ctr[_16_qam_01]++;
+        phase_ctr[_16_qam_01]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_10 * ref_signal[_16QAM_PHASE_01])
+    {
+        amp_ctr[_16_qam_10]++;
+        phase_ctr[_16_qam_01]++;
+    }
+
+    else if (modulated_signal == _16QAM_AMP_11 * ref_signal[_16QAM_PHASE_01])
+    {
+        amp_ctr[_16_qam_11]++;
+        phase_ctr[_16_qam_01]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_00 * ref_signal[_16QAM_PHASE_10])
+    {
+        amp_ctr[_16_qam_00]++;
+        phase_ctr[_16_qam_10]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_01 * ref_signal[_16QAM_PHASE_10])
+    {
+        amp_ctr[_16_qam_01]++;
+        phase_ctr[_16_qam_10]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_10 * ref_signal[_16QAM_PHASE_10])
+    {
+        amp_ctr[_16_qam_10]++;
+        phase_ctr[_16_qam_10]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_11 * ref_signal[_16QAM_PHASE_10])
+    {
+        amp_ctr[_16_qam_11]++;
+        phase_ctr[_16_qam_10]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_00 * ref_signal[_16QAM_PHASE_11])
+    {
+        amp_ctr[_16_qam_00]++;
+        phase_ctr[_16_qam_11]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_01 * ref_signal[_16QAM_PHASE_11])
+    {
+        amp_ctr[_16_qam_01]++;
+        phase_ctr[_16_qam_11]++;
+    }
+    else if (modulated_signal == _16QAM_AMP_10 * ref_signal[_16QAM_PHASE_11])
+    {
+        amp_ctr[_16_qam_10]++;
+        phase_ctr[_16_qam_11]++;
+    }
+    else
+    {
+        amp_ctr[_16_qam_11]++;
+        phase_ctr[_16_qam_11]++;
+    }
+}
 
 void demodulate(char* mod,
                 float amp,
@@ -10,80 +109,64 @@ void demodulate(char* mod,
                 const float* signal_data,
                 const float* modulated_signal,
                 int32_t n_bits,
-                int32_t n_cos_samples,
-                int32_t* demodulated_bits)
-{
+                int32_t cos_factor,
+                int32_t* demodulated_bits){
+    int32_t n_cos_samples = get_n_cos_samples(cos_factor);
     char bps[] = "bpsk";
     char bpsc[] = "bpskc";
     char qps[] = "qpsk";
     char qpsc[] = "qpskc";
-    char am[]  = "am";
-    char amc[]  = "amc";
-    char fm[]  = "fm";
-    char fmc[]  = "fmc";
+    char am[] = "am";
+    char amc[] = "amc";
+    char fm[] = "fm";
+    char fmc[] = "fmc";
+    char _16_qam[] = "16qam";
+    char _16_qamc[] = "16qamc";
 
-    if((strcmp(mod, bps) == 0) || (strcmp(mod, bpsc) == 0))
-    {
-            int32_t i = 0;
-            for (; i < n_bits; ++i)
-            {
-                int32_t bit_idx = i * n_cos_samples;
-                int32_t bpsk_0_counter = 0;
-                int32_t bpsk_1_counter = 0;
-                int32_t j = 0;
-                for (; j < n_cos_samples; ++j)
-                {
-                    const float* modulated_signal2 = &modulated_signal[bit_idx];
-                    if (modulated_signal2[j] == signal_data[(n_cos_samples * 90 / N_MAX_DEGREE) + j])
-                    {
-                        bpsk_0_counter++;
-                    }
-                    else if (modulated_signal2[j] == signal_data[(n_cos_samples * 180 / N_MAX_DEGREE) + j])
-                    {
-                        bpsk_1_counter++;
-                    }
+    if (!strcmp(mod, bps) || !strcmp(mod, bpsc)) {
+        int32_t i = 0;
+        for (; i < n_bits; ++i) {
+            int32_t bit_idx = i * n_cos_samples;
+            int32_t bpsk_0_counter = 0;
+            int32_t bpsk_1_counter = 0;
+            int32_t j = 0;
+            for (; j < n_cos_samples; ++j) {
+                const float *modulated_signal2 = &modulated_signal[bit_idx];
+                if (modulated_signal2[j] == signal_data[(n_cos_samples * 90 / N_MAX_DEGREE) + j]) {
+                    bpsk_0_counter++;
+                } else if (modulated_signal2[j] == signal_data[(n_cos_samples * 180 / N_MAX_DEGREE) + j]) {
+                    bpsk_1_counter++;
                 }
-                demodulated_bits[i] = (int32_t) (bpsk_0_counter < bpsk_1_counter);
             }
-    }
-    else if((strcmp(mod, qps) == 0) || (strcmp(mod, qpsc) == 0))
-    {
-            int32_t i = 0, k = 0;
-            for(; i < n_bits/2; ++i)
-            {
-                int32_t bit_idx = (i) * n_cos_samples;
-                int32_t qpsk_00_counter = 0;
-                int32_t qpsk_01_counter = 0;
-                int32_t qpsk_10_counter = 0;
-                int32_t qpsk_11_counter = 0;
-                int32_t j = 0;
-                const float* modulated_signal2 = &modulated_signal[bit_idx];
-                for(; j < n_cos_samples; ++j)
-                {
-                    if(modulated_signal2[j] == signal_data[315 + j])
-                    {
-                        qpsk_00_counter++;
-                    }
-                    else if(modulated_signal2[j] == signal_data[45 + j])
-                    {
-                        qpsk_01_counter++;
-                    }
-                    else if(modulated_signal2[j] == signal_data[225  + j])
-                    {
-                        qpsk_10_counter++;
-                    }
-                    else if(modulated_signal2[j] == signal_data[135  + j])
-                    {
-                        qpsk_11_counter++;
-                    }
+            demodulated_bits[i] = (int32_t) (bpsk_0_counter < bpsk_1_counter);
+        }
+    } else if (!strcmp(mod, qps) || !strcmp(mod, qpsc)) {
+        int32_t i = 0, k = 0;
+        for (; i < n_bits / 2; ++i) {
+            int32_t bit_idx = (i) * n_cos_samples;
+            int32_t qpsk_00_counter = 0;
+            int32_t qpsk_01_counter = 0;
+            int32_t qpsk_10_counter = 0;
+            int32_t qpsk_11_counter = 0;
+            int32_t j = 0;
+            const float *modulated_signal2 = &modulated_signal[bit_idx];
+            for (; j < n_cos_samples; ++j) {
+                if (modulated_signal2[j] == signal_data[315 + j]) {
+                    qpsk_00_counter++;
+                } else if (modulated_signal2[j] == signal_data[45 + j]) {
+                    qpsk_01_counter++;
+                } else if (modulated_signal2[j] == signal_data[225 + j]) {
+                    qpsk_10_counter++;
+                } else if (modulated_signal2[j] == signal_data[135 + j]) {
+                    qpsk_11_counter++;
                 }
-                demodulated_bits[k] = (int32_t)((qpsk_10_counter + qpsk_11_counter) >  (qpsk_00_counter + qpsk_01_counter));
-                demodulated_bits[k + 1] = (int32_t)((qpsk_10_counter + qpsk_00_counter) < (qpsk_11_counter + qpsk_01_counter));
-                k += 2;
             }
-    }
-    else if((strcmp(mod, fm) == 0) || (strcmp(mod, fmc) == 0))
-    {
+            demodulated_bits[k] = (int32_t) ((qpsk_10_counter + qpsk_11_counter) > (qpsk_00_counter + qpsk_01_counter));
+            demodulated_bits[k + 1] = (int32_t) ((qpsk_10_counter + qpsk_00_counter) <
+                                                 (qpsk_11_counter + qpsk_01_counter));
+            k += 2;
+        }
+    } else if (!strcmp(mod, fm) || !strcmp(mod, fmc)) {
         int32_t i = 0;
         for (; i < n_bits; ++i) {
             int32_t bit_idx = i * n_cos_samples;
@@ -97,11 +180,9 @@ void demodulate(char* mod,
                     fm_1_counter++;
                 }
             }
-            demodulated_bits[i] = (int32_t)(fm_0_counter < fm_1_counter);
+            demodulated_bits[i] = (int32_t) (fm_0_counter < fm_1_counter);
         }
-    }
-    else if((strcmp(mod, am) == 0) || (strcmp(mod, amc) == 0))
-    {
+    } else if (!strcmp(mod, am) || !strcmp(mod, amc)) {
         int32_t i = 0;
         for (; i < n_bits; ++i) {
             int32_t bit_idx = i * n_cos_samples;
@@ -115,7 +196,36 @@ void demodulate(char* mod,
                     am_1_counter++;
                 }
             }
-            demodulated_bits[i] = (int32_t)(am_0_counter < am_1_counter);
+            demodulated_bits[i] = (int32_t) (am_0_counter < am_1_counter);
+        }
+    } else if (!strcmp(mod, _16_qam)  || !strcmp(mod, _16_qamc))
+    {
+        printf("mgoldyn 16qam\n");
+        int32_t i = 0, k = 0;
+        for (; i < n_bits / 4; ++i) {
+            int32_t bit_idx = i * n_cos_samples;
+            int32_t phase_counter[_16_qam_size] = {0};
+            int32_t amp_counter[_16_qam_size]   = {0};
+            int32_t j = 0;
+            const float *modulated_signal_bit = &modulated_signal[bit_idx];
+            for (; j < n_cos_samples; ++j)
+            {
+                demodulate_16_qam(modulated_signal_bit[j], &signal_data[j], phase_counter, amp_counter);
+            }
+            //phase bits
+            printf("phase 00 = %d, 01 = %d, 10 = %d, 11 = %d\n", phase_counter[_16_qam_00], phase_counter[_16_qam_01],
+                   phase_counter[_16_qam_10], phase_counter[_16_qam_11]);
+            demodulated_bits[k + 0] = (int32_t) ((phase_counter[_16_qam_10] + phase_counter[_16_qam_11]) >
+                    (phase_counter[_16_qam_01] + phase_counter[_16_qam_00]));
+            demodulated_bits[k + 1] = (int32_t) ((phase_counter[_16_qam_11] + phase_counter[_16_qam_01]) >
+                    (phase_counter[_16_qam_10] + phase_counter[_16_qam_00]));
+            //amp bits
+            demodulated_bits[k + 2] = (int32_t) ((amp_counter[_16_qam_10] + amp_counter[_16_qam_11]) >
+                    (amp_counter[_16_qam_01] + amp_counter[_16_qam_00]));
+            demodulated_bits[k + 3] = (int32_t) ((amp_counter[_16_qam_01] + amp_counter[_16_qam_11]) >
+                    (amp_counter[_16_qam_00] + amp_counter[_16_qam_10]));
+
+            k += 4;
         }
     }
 }
