@@ -152,7 +152,7 @@ void modulate_16qam_cuda(int32_t n_cos_samples,
     float* d_modulated_signal;
     float* d_signal_data;
 
-    cudaMalloc((void**)&d_modulated_signal, sizeof(float) * n_cos_samples * n_bits/4);
+    cudaMalloc((void**)&d_modulated_signal, sizeof(float) * n_cos_samples * n_bits / 4);
     cudaMalloc((void**)&d_signal_data, sizeof(float) * n_cos_samples * 2);
     cudaMemcpy(d_signal_data, signal_data, sizeof(float) * n_cos_samples * 2, cudaMemcpyHostToDevice);
 
@@ -196,11 +196,10 @@ void modulate_16qam_cuda(int32_t n_cos_samples,
         int32_t threadsPerBlock = 8;
         int32_t blocksPerGrid   = ( n_cos_samples + threadsPerBlock - 1) / threadsPerBlock;
 
-        calc_mod_sig<<<blocksPerGrid, threadsPerBlock>>>(n_cos_samples, scaled_phase_shift, amp_factor, d_signal_data, &d_modulated_signal[sig_idx * n_cos_samples]);
-        cudaMemcpy(&modulated_signal[(sig_idx/4)*n_cos_samples], d_modulated_signal, sizeof(float) * n_cos_samples, cudaMemcpyDeviceToHost);
+        calc_mod_sig<<<blocksPerGrid, threadsPerBlock>>>(n_cos_samples, scaled_phase_shift, amp_factor, d_signal_data, &d_modulated_signal[(sig_idx / 4) * n_cos_samples]);
+
     }
-
-
+    cudaMemcpy(modulated_signal, d_modulated_signal, sizeof(float) * n_cos_samples * n_bits / 4, cudaMemcpyDeviceToHost);
     cudaFree((void*)d_modulated_signal);
     cudaFree((void*)d_signal_data);
 }
