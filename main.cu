@@ -20,12 +20,12 @@ C_DELLEXPORT float *psk_cos_lut = NULL;
 C_DELLEXPORT float *modulated_data = NULL;
 C_DELLEXPORT float *dynamic_data = NULL;
 
-C_DELLEXPORT int32_t init_func(float amplitude,
-                               float freq,
-                               int32_t cos_factor_idx,
-                               int32_t n_bits,
-                               int32_t *bit_stream,
-                               char *mod) {
+C_DELLEXPORT int32_t modulate(float amplitude,
+                              float freq,
+                              int32_t cos_factor_idx,
+                              int32_t n_bits,
+                              int32_t *bit_stream,
+                              char *mod) {
     char bps[] = "bpsk";
     char bpsc[] = "bpskc";
     char qps[] = "qpsk";
@@ -271,7 +271,7 @@ int main(void) {
     int32_t cos_factor = 2;
     int32_t n_bits = 64;
     cudaFree(0);
-    init_func(amp,
+    modulate(amp,
               freq,
               cos_factor,
               n_bits,

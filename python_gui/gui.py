@@ -68,7 +68,7 @@ class modulation_c():
         self.modulation_dll.cuda_dummy_free()
         start = timer()
 
-        status = self.modulation_dll.init_func(self.amplitude, self.frequency, self.cos_factor_idx, self.n_bits_c, byref(self.bit_stream),
+        status = self.modulation_dll.modulate(self.amplitude, self.frequency, self.cos_factor_idx, self.n_bits_c, byref(self.bit_stream),
                                           self.mod_type)
         end = timer()
         print("time = ", end - start)
