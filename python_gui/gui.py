@@ -1,9 +1,6 @@
-import matplotlib.pyplot as plt
 from ctypes import*
 import numpy as np
-from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
 from PyQt5 import QtWidgets
 import sys
 import pyqtgraph as pg
@@ -47,6 +44,8 @@ class demodulated_data_window(QWidget):
 
         self.graphWidget.clear()
         self.graphWidget.plot(data_x, data_y, pen=None, symbol='o')
+        self.graphWidget.setRange(rect=None, xRange=[-1,1], yRange=[-1,1])
+        self.graphWidget.plot(data_x, data_y, pen=None, symbol='o')
         self.show()
 
 class demodulation_c():
@@ -68,39 +67,72 @@ class demodulation_c():
         self.n_bits = n_bits
         self.demod_data = demod_data
 
-    def create_constellation_bpsk(self):
+    def create_constellation_2_points(self):
+
 
         for i in range(self.n_bits):
-            self.constellation_data_y.append(0)
+            white_noise_y = np.random.normal(0, 0.04, 2)
+            white_noise_x = np.random.normal(0, 0.04, 2)
+            self.constellation_data_y.append(white_noise_y[0])
             if self.demod_data[i] == 1:
-                self.constellation_data_x.append(1)
+                self.constellation_data_x.append(1 + white_noise_x[0])
             else:
-                self.constellation_data_x.append(-1)
+                self.constellation_data_x.append(-1 + white_noise_x[0])
 
-    def create_constellation_qpsk(self):
+    def create_constellation_4_points(self):
         for i in range(int(self.n_bits/2)):
+            white_noise = np.random.normal(0, 0.04, 2)
             if self.demod_data[i] == 0:
                 if self.demod_data[i+1] == 0:
-                    self.constellation_data_y.append(-1)
-                    self.constellation_data_x.append(-1)
+                    self.constellation_data_y.append(-1 + white_noise[0])
+                    self.constellation_data_x.append(-1 + white_noise[1])
                 else:
-                    self.constellation_data_y.append(1)
-                    self.constellation_data_x.append(-1)
+                    self.constellation_data_y.append(1 + white_noise[0])
+                    self.constellation_data_x.append(-1 + white_noise[1])
             else:
                 if self.demod_data[i + 1] == 0:
-                    self.constellation_data_y.append(-1)
-                    self.constellation_data_x.append(1)
+                    self.constellation_data_y.append(-1 + white_noise[0])
+                    self.constellation_data_x.append(1 + white_noise[1])
                 else:
-                    self.constellation_data_y.append(1)
-                    self.constellation_data_x.append(1)
+                    self.constellation_data_y.append(1 + white_noise[0])
+                    self.constellation_data_x.append(1 + white_noise[1])
+
+    def create_constellation_16_points(self):
+        tmp = []
+        for i in range(int(self.n_bits / 2)):
+            tmp.append(str(self.demod_data[i * 2]) + str(self.demod_data[(i * 2) + 1]))
+        for j in range(int(self.n_bits / 4)):
+            white_noise = np.random.normal(0, 0.04, 2)
+            i = j*2
+            if tmp[i] == "00":
+                self.constellation_data_y.append(-0.75 + white_noise[0])
+            elif tmp[i] == "01":
+                self.constellation_data_y.append(-0.25 + white_noise[0])
+            elif tmp[i] == "10":
+                self.constellation_data_y.append(0.25 + white_noise[0])
+            elif tmp[i] == "11":
+                self.constellation_data_y.append(0.75 + white_noise[0])
+            if tmp[i + 1] == "00":
+                self.constellation_data_x.append(-0.75 + white_noise[1])
+            elif tmp[i + 1] == "01":
+                self.constellation_data_x.append(-0.25 + white_noise[1])
+            elif tmp[i + 1] == "10":
+                self.constellation_data_x.append(0.25 + white_noise[1])
+            elif tmp[i + 1] == "11":
+                self.constellation_data_x.append(0.75 + white_noise[1])
+
 
     def get_constellation(self):
         self.constellation_data_x = []
         self.constellation_data_y = []
-        if self.mod == "bpsk" or self.mod == "bpskc":
-            self.create_constellation_bpsk()
+        if self.mod == "bpsk" or self.mod == "bpskc"\
+                or self.mod == "fm" or self.mod == "fmc"\
+                or self.mod == "am" or self.mod == "amc":
+            self.create_constellation_2_points()
         elif self.mod == "qpsk" or self.mod == "qpskc":
-            self.create_constellation_qpsk()
+            self.create_constellation_4_points()
+        elif self.mod == "16qam" or self.mod == "16qamc":
+            self.create_constellation_16_points()
 
         self.demodulated_window.show_mod_data(self.constellation_data_y, self.constellation_data_x)
 
@@ -119,7 +151,6 @@ class modulation_c():
         self.modulation_dll = cdll.LoadLibrary("D:\\magisterka\\git\\digital_modulations\\main2.dll")
         self.mod_data_window = modulated_data_window()
         self.n_samples = 0
-        self.demodulated_data = []
         self.demodulation_c = demodulation_c()
 
     def add_out_text(self, out_text):
@@ -166,38 +197,6 @@ class modulation_c():
             self.out_text.setText(str(demodulated_bits))
             self.demodulation_c.set_demodulation_params(mod_type, amp, freq, n_bits, demodulated_bits)
             self.demodulation_c.get_constellation()
-            self.demodulated_data = []
-            if mod_type == "bpsk" or mod_type == "bpskc":
-                for i in range(n_bits):
-                    self.demodulated_data.append(int(modulated_data[360 * i + 180] == amp))
-            elif mod_type == "qpsk" or mod_type == "qpskc":
-                for i in range(int(n_bits / 2)):
-                    if modulated_data[360 * i + 45] == -1 * amp:
-                        self.demodulated_data.append(1)
-                        self.demodulated_data.append(1)
-                    elif modulated_data[360 * i + 45] == 1 * amp:
-                        self.demodulated_data.append(0)
-                        self.demodulated_data.append(0)
-                    elif modulated_data[360 * i + 270] < 0 and  modulated_data[360 * i + 359] < 0:
-                        self.demodulated_data.append(1)
-                        self.demodulated_data.append(0)
-                    else:
-                        self.demodulated_data.append(0)
-                        self.demodulated_data.append(1)
-            elif mod_type == "am":
-                for i in range(n_bits):
-                    self.demodulated_data.append(int(modulated_data[360 * i + 180] == -amp))
-
-            elif mod_type == "fm" or mod_type == "fmc":
-                for i in range(n_bits):
-                    self.demodulated_data.append(int(modulated_data[360 * i + 45] !=
-                                                     - modulated_data[360 * i + 90]))
-            else:
-                self.demodulated_data.append(0)
-
-            # print("modulated data")
-            # for i in range(n_bits):
-            #     print(self.demodulated_data[i])
 
             self.mod_data_window.show_mod_data(modulated_data)
             self.mod_data_window.show()
