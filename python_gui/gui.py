@@ -29,6 +29,82 @@ class modulated_data_window(QWidget):
         self.graphWidget.clear()
         self.graphWidget.plot(data)
 
+class demodulated_data_window(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout()
+        self.setWindowTitle("Constellation")
+        self.setGeometry(600, 600, 600, 600)
+        self.label = QLabel("Constellation")
+        self.setLayout(layout)
+        self.graphWidget = pg.PlotWidget()
+        self.graphWidget.setLabel("left", "Im")
+        self.graphWidget.setLabel("bottom", "Re")
+
+        layout.addWidget(self.graphWidget)
+
+    def show_mod_data(self, data_y, data_x):
+
+        self.graphWidget.clear()
+        self.graphWidget.plot(data_x, data_y, pen=None, symbol='o')
+        self.show()
+
+class demodulation_c():
+    def __init__(self):
+        super().__init__()
+        self.mod = ""
+        self.amplitude = 1
+        self.frequency = 1
+        self.n_bits = 0
+        self.demod_data = []
+        self.constellation_data_x = []
+        self.constellation_data_y = []
+        self.demodulated_window = demodulated_data_window()
+
+    def set_demodulation_params(self, mod, amp, freq, n_bits, demod_data):
+        self.mod = mod
+        self.amplitude = amp
+        self.frequency = freq
+        self.n_bits = n_bits
+        self.demod_data = demod_data
+
+    def create_constellation_bpsk(self):
+
+        for i in range(self.n_bits):
+            self.constellation_data_y.append(0)
+            if self.demod_data[i] == 1:
+                self.constellation_data_x.append(1)
+            else:
+                self.constellation_data_x.append(-1)
+
+    def create_constellation_qpsk(self):
+        for i in range(int(self.n_bits/2)):
+            if self.demod_data[i] == 0:
+                if self.demod_data[i+1] == 0:
+                    self.constellation_data_y.append(-1)
+                    self.constellation_data_x.append(-1)
+                else:
+                    self.constellation_data_y.append(1)
+                    self.constellation_data_x.append(-1)
+            else:
+                if self.demod_data[i + 1] == 0:
+                    self.constellation_data_y.append(-1)
+                    self.constellation_data_x.append(1)
+                else:
+                    self.constellation_data_y.append(1)
+                    self.constellation_data_x.append(1)
+
+    def get_constellation(self):
+        self.constellation_data_x = []
+        self.constellation_data_y = []
+        if self.mod == "bpsk" or self.mod == "bpskc":
+            self.create_constellation_bpsk()
+        elif self.mod == "qpsk" or self.mod == "qpskc":
+            self.create_constellation_qpsk()
+
+        self.demodulated_window.show_mod_data(self.constellation_data_y, self.constellation_data_x)
+
+
 class modulation_c():
     def __init__(self):
         super().__init__()
@@ -44,6 +120,10 @@ class modulation_c():
         self.mod_data_window = modulated_data_window()
         self.n_samples = 0
         self.demodulated_data = []
+        self.demodulation_c = demodulation_c()
+
+    def add_out_text(self, out_text):
+        self.out_text = out_text
 
     def set_mod_parameters(self, amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream):
         if mod_type == "qpsk" or mod_type == "qpskc":
@@ -75,11 +155,17 @@ class modulation_c():
         if status == 0:
             n_samples = int(180 * cos_fac_idx / self.n_samples_factor) * n_bits
             self.n_samples = n_samples
-            type_for_probki = c_float * n_samples
+            type_for_samples = c_float * n_samples
+            type_for_bits = c_int32 * n_bits;
 
-            modulated_data_ptr = POINTER(type_for_probki).in_dll(self.modulation_dll, "modulated_data").contents
+            modulated_data_ptr = POINTER(type_for_samples).in_dll(self.modulation_dll, "modulated_data").contents
             modulated_data = np.array(modulated_data_ptr[:])
 
+            demodulated_bits_ptr = POINTER(type_for_bits).in_dll(self.modulation_dll, "demodulated_bits").contents
+            demodulated_bits = np.array(demodulated_bits_ptr[:])
+            self.out_text.setText(str(demodulated_bits))
+            self.demodulation_c.set_demodulation_params(mod_type, amp, freq, n_bits, demodulated_bits)
+            self.demodulation_c.get_constellation()
             self.demodulated_data = []
             if mod_type == "bpsk" or mod_type == "bpskc":
                 for i in range(n_bits):
@@ -165,11 +251,18 @@ class MainWindow(QMainWindow):
         self.file.move(400, 400)
 
         self.text_edit = QTextEdit(self)
-        self.text_edit.move(400, 200)
+        self.text_edit.move(400, 100)
 
         self.text_input_label = QtWidgets.QLabel(self)
         self.text_input_label.setText("Input bits")
-        self.text_input_label.move(400, 170)
+        self.text_input_label.move(400, 70)
+
+        self.text_edit_out = QTextEdit(self)
+        self.text_edit_out.move(400, 200)
+
+        self.text_output_label = QtWidgets.QLabel(self)
+        self.text_output_label.setText("Demodulated bits")
+        self.text_output_label.move(400, 170)
 
         checkbox_location = 20
         checkbox_width = 20
@@ -206,6 +299,7 @@ class MainWindow(QMainWindow):
         self.mod_checkbox.addButton(self._16qam_checkbox, 7)
         self.mod_checkbox.addButton(self._16qam_cuda_checkbox, 8)
         self.modulation = modulation_c()
+        self.modulation.add_out_text(self.text_edit_out)
 
     def show_file_dialog(self):
         fname = QFileDialog.getOpenFileName(self, "Open file", "C:\\magisterka\\git\\digital_modulations\\")

@@ -18,7 +18,21 @@ extern "C"
 {
 C_DELLEXPORT float *psk_cos_lut = NULL;
 C_DELLEXPORT float *modulated_data = NULL;
-C_DELLEXPORT float *dynamic_data = NULL;
+C_DELLEXPORT int32_t *demodulated_bits = NULL;
+
+C_DELLEXPORT void memory_free()
+{
+    if (demodulated_bits != NULL) {
+        free(demodulated_bits);
+    }
+    if (psk_cos_lut != NULL) {
+        free(psk_cos_lut);
+    }
+    if (modulated_data != NULL) {
+        free(modulated_data);
+    }
+}
+
 
 C_DELLEXPORT int32_t modulate(float amplitude,
                               float freq,
@@ -36,6 +50,9 @@ C_DELLEXPORT int32_t modulate(float amplitude,
     char fmc[] = "fmc";
     char _16_qam[] = "16qam";
     char _16_qamc[] = "16qamc";
+
+    memory_free();
+    demodulated_bits = (int32_t*)malloc(sizeof(int32_t) * n_bits);
 
     if (!strcmp(mod, bps)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
@@ -181,23 +198,21 @@ C_DELLEXPORT int32_t modulate(float amplitude,
         t = clock() - t;
         double time_taken = ((double) t) / CLOCKS_PER_SEC;
         printf("mod CU = %s, time = %.30lf\n", mod, time_taken);
-    } else {
+    }
+    else
+    {
         return 1;
     }
+    demodulate(mod,
+               amplitude,
+               freq,
+               psk_cos_lut,
+               modulated_data,
+               n_bits,
+               cos_factor_idx,
+               demodulated_bits);
 
     return 0;
-}
-
-C_DELLEXPORT void memory_free() {
-    if (dynamic_data != NULL) {
-        free(dynamic_data);
-    }
-    if (psk_cos_lut != NULL) {
-        free(psk_cos_lut);
-    }
-    if (modulated_data != NULL) {
-        free(modulated_data);
-    }
 }
 
 C_DELLEXPORT void cuda_dummy_free() {

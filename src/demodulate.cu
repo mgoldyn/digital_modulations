@@ -182,7 +182,8 @@ void demodulate(char* mod,
             }
             demodulated_bits[i] = (int32_t) (fm_0_counter < fm_1_counter);
         }
-    } else if (!strcmp(mod, am) || !strcmp(mod, amc)) {
+    }
+    else if (!strcmp(mod, am) || !strcmp(mod, amc)) {
         int32_t i = 0;
         for (; i < n_bits; ++i) {
             int32_t bit_idx = i * n_cos_samples;
@@ -198,9 +199,9 @@ void demodulate(char* mod,
             }
             demodulated_bits[i] = (int32_t) (am_0_counter < am_1_counter);
         }
-    } else if (!strcmp(mod, _16_qam)  || !strcmp(mod, _16_qamc))
+    }
+    else if (!strcmp(mod, _16_qam)  || !strcmp(mod, _16_qamc))
     {
-        printf("mgoldyn 16qam\n");
         int32_t i = 0, k = 0;
         for (; i < n_bits / 4; ++i) {
             int32_t bit_idx = i * n_cos_samples;
@@ -213,8 +214,6 @@ void demodulate(char* mod,
                 demodulate_16_qam(modulated_signal_bit[j], &signal_data[j], phase_counter, amp_counter);
             }
             //phase bits
-            printf("phase 00 = %d, 01 = %d, 10 = %d, 11 = %d\n", phase_counter[_16_qam_00], phase_counter[_16_qam_01],
-                   phase_counter[_16_qam_10], phase_counter[_16_qam_11]);
             demodulated_bits[k + 0] = (int32_t) ((phase_counter[_16_qam_10] + phase_counter[_16_qam_11]) >
                     (phase_counter[_16_qam_01] + phase_counter[_16_qam_00]));
             demodulated_bits[k + 1] = (int32_t) ((phase_counter[_16_qam_11] + phase_counter[_16_qam_01]) >
@@ -224,7 +223,6 @@ void demodulate(char* mod,
                     (amp_counter[_16_qam_01] + amp_counter[_16_qam_00]));
             demodulated_bits[k + 3] = (int32_t) ((amp_counter[_16_qam_01] + amp_counter[_16_qam_11]) >
                     (amp_counter[_16_qam_00] + amp_counter[_16_qam_10]));
-
             k += 4;
         }
     }
