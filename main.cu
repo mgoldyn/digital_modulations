@@ -24,12 +24,15 @@ C_DELLEXPORT void memory_free()
 {
     if (demodulated_bits != NULL) {
         free(demodulated_bits);
+        demodulated_bits = NULL;
     }
     if (psk_cos_lut != NULL) {
         free(psk_cos_lut);
+        psk_cos_lut = NULL;
     }
     if (modulated_data != NULL) {
         free(modulated_data);
+        modulated_data = NULL;
     }
 }
 
