@@ -18,6 +18,7 @@ void modulate_qpsk(int32_t n_cos_samples,
 {
     int32_t bit_idx = 0, data_idx = 0;
     int32_t phase_shift;
+
     for(; bit_idx < n_bits; bit_idx += 2, ++data_idx)
     {
         if(!bit_stream[bit_idx])

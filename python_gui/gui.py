@@ -6,7 +6,6 @@ import sys
 import pyqtgraph as pg
 from timeit import default_timer as timer
 
-
 class modulated_data_window(QWidget):
     def __init__(self):
         super().__init__()
@@ -81,16 +80,16 @@ class demodulation_c():
 
     def create_constellation_4_points(self):
         for i in range(int(self.n_bits/2)):
-            white_noise = np.random.normal(0, 0.04, 2)
-            if self.demod_data[i] == 0:
-                if self.demod_data[i+1] == 0:
+            white_noise = np.random.normal(0, 0.02, 2)
+            if self.demod_data[i*2] == 0:
+                if self.demod_data[(i*2)+1] == 0:
                     self.constellation_data_y.append(-1 + white_noise[0])
                     self.constellation_data_x.append(-1 + white_noise[1])
                 else:
                     self.constellation_data_y.append(1 + white_noise[0])
                     self.constellation_data_x.append(-1 + white_noise[1])
             else:
-                if self.demod_data[i + 1] == 0:
+                if self.demod_data[(i*2) + 1] == 0:
                     self.constellation_data_y.append(-1 + white_noise[0])
                     self.constellation_data_x.append(1 + white_noise[1])
                 else:
