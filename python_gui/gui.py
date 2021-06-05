@@ -68,7 +68,6 @@ class demodulation_c():
 
     def create_constellation_2_points(self):
 
-
         for i in range(self.n_bits):
             white_noise_y = np.random.normal(0, 0.004, 2)
             white_noise_x = np.random.normal(0, 0.004, 2)
