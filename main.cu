@@ -60,8 +60,6 @@ C_DELLEXPORT int32_t modulate(float amplitude,
     if (!strcmp(mod, bps)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
-        clock_t t;
-        t = clock();
         psk_cos_lut = (float *) malloc(sizeof(float) * n_cos_samples * N_SIGNAL_PERIODS);
         modulated_data = (float *) malloc(sizeof(float) * n_cos_samples * n_bits);
         if (!psk_cos_lut || !modulated_data) {
@@ -71,9 +69,6 @@ C_DELLEXPORT int32_t modulate(float amplitude,
         init_psk_cos_lut(&params, psk_cos_lut);
 
         modulate_bpsk(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-        t = clock() - t;
-        double time_taken = ((double) t) / CLOCKS_PER_SEC;
-        printf("mod C = %s, time = %.30lf\n", mod, time_taken);
     } else if (!strcmp(mod, qps)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
@@ -86,7 +81,6 @@ C_DELLEXPORT int32_t modulate(float amplitude,
 
         init_psk_cos_lut(&params, psk_cos_lut);
         modulate_qpsk(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-        printf("mod C = %s\n", mod);
     } else if (!strcmp(mod, qpsc)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
@@ -99,7 +93,6 @@ C_DELLEXPORT int32_t modulate(float amplitude,
 
         init_psk_cos_lut(&params, psk_cos_lut);
         modulate_qpsk_cuda(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-        printf("mod CU = %s\n", mod);
     } else if (!strcmp(mod, am)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
@@ -112,7 +105,6 @@ C_DELLEXPORT int32_t modulate(float amplitude,
 
         init_psk_cos_lut(&params, psk_cos_lut);
         modulate_am(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-        printf("mod C = %s\n", mod);
     } else if (!strcmp(mod, amc)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
@@ -125,7 +117,6 @@ C_DELLEXPORT int32_t modulate(float amplitude,
 
         init_psk_cos_lut(&params, psk_cos_lut);
         modulate_am_cuda(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-        printf("mod CU = %s\n", mod);
     } else if (!strcmp(mod, fm)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
@@ -138,7 +129,6 @@ C_DELLEXPORT int32_t modulate(float amplitude,
 
         init_fm_cos_lut(&params, psk_cos_lut);
         modulate_fm(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-        printf("mod C = %s\n", mod);
     } else if (!strcmp(mod, fmc)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
@@ -151,7 +141,6 @@ C_DELLEXPORT int32_t modulate(float amplitude,
 
         init_fm_cos_lut(&params, psk_cos_lut);
         modulate_fm_cuda(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-        printf("mod CU = %s\n", mod);
     } else if (!strcmp(mod, bpsc)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
@@ -163,12 +152,7 @@ C_DELLEXPORT int32_t modulate(float amplitude,
         }
 
         init_psk_cos_lut(&params, psk_cos_lut);
-        clock_t t = clock();
         modulate_bpsk_cuda(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-        t = clock() - t;
-        double time_taken = ((double) t) / CLOCKS_PER_SEC;
-        printf("mod CU = %s, time = %.30lf\n", mod, time_taken);
-
     } else if (!strcmp(mod, _16_qam)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
@@ -180,11 +164,7 @@ C_DELLEXPORT int32_t modulate(float amplitude,
         }
 
         init_psk_cos_lut(&params, psk_cos_lut);
-        clock_t t = clock();
         modulate_16qam(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-        t = clock() - t;
-        double time_taken = ((double) t) / CLOCKS_PER_SEC;
-        printf("mod C = %s, time = %.60lf\n", mod, time_taken);
     } else if (!strcmp(mod, _16_qamc)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
@@ -196,14 +176,11 @@ C_DELLEXPORT int32_t modulate(float amplitude,
         }
 
         init_psk_cos_lut(&params, psk_cos_lut);
-        clock_t t = clock();
         modulate_16qam_cuda(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-        t = clock() - t;
-        double time_taken = ((double) t) / CLOCKS_PER_SEC;
-        printf("mod CU = %s, time = %.30lf\n", mod, time_taken);
     }
     else
     {
+        memory_free();
         return 1;
     }
     demodulate(mod,

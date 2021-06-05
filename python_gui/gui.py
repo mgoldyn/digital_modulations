@@ -70,8 +70,8 @@ class demodulation_c():
 
 
         for i in range(self.n_bits):
-            white_noise_y = np.random.normal(0, 0.04, 2)
-            white_noise_x = np.random.normal(0, 0.04, 2)
+            white_noise_y = np.random.normal(0, 0.004, 2)
+            white_noise_x = np.random.normal(0, 0.004, 2)
             self.constellation_data_y.append(white_noise_y[0])
             if self.demod_data[i] == 1:
                 self.constellation_data_x.append(1 + white_noise_x[0])
@@ -80,7 +80,7 @@ class demodulation_c():
 
     def create_constellation_4_points(self):
         for i in range(int(self.n_bits/2)):
-            white_noise = np.random.normal(0, 0.02, 2)
+            white_noise = np.random.normal(0, 0.002, 2)
             if self.demod_data[i*2] == 0:
                 if self.demod_data[(i*2)+1] == 0:
                     self.constellation_data_y.append(-1 + white_noise[0])
@@ -101,7 +101,7 @@ class demodulation_c():
         for i in range(int(self.n_bits / 2)):
             tmp.append(str(self.demod_data[i * 2]) + str(self.demod_data[(i * 2) + 1]))
         for j in range(int(self.n_bits / 4)):
-            white_noise = np.random.normal(0, 0.04, 2)
+            white_noise = np.random.normal(0, 0.004, 2)
             i = j*2
             if tmp[i] == "00":
                 self.constellation_data_y.append(-0.75 + white_noise[0])
@@ -176,12 +176,19 @@ class modulation_c():
 
         self.set_mod_parameters(amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream)
         self.modulation_dll.cuda_dummy_free()
-        start = timer()
+        end_time = 0
+        for i in range(1000):
+            start = timer()
 
-        status = self.modulation_dll.modulate(self.amplitude, self.frequency, self.cos_factor_idx, self.n_bits_c, byref(self.bit_stream),
-                                          self.mod_type)
-        end = timer()
-        print("time = ", end - start)
+            status = self.modulation_dll.modulate(self.amplitude,
+                                              self.frequency,
+                                              self.cos_factor_idx,
+                                              self.n_bits_c,
+                                              byref(self.bit_stream),
+                                              self.mod_type)
+            end = timer()
+            end_time += end - start
+        print("\ntime = ", end_time/1000, " mod = ", mod_type)
         if status == 0:
             n_samples = int(180 * cos_fac_idx / self.n_samples_factor) * n_bits
             self.n_samples = n_samples
