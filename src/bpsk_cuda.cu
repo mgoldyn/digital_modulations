@@ -64,7 +64,7 @@ void modulate_bpsk_cuda(int32_t n_cos_samples,
     cudaMalloc((void**)&d_modulated_signal, sizeof(float) * n_cos_samples * N_CUDA_ELEM);
     cudaMalloc((void**)&d_signal_data, sizeof(float) * n_cos_samples * 2);
     cudaMalloc((void**)&d_bit_stream, sizeof(int32_t) * n_bits);
-    cudaMalloc((void**)&d_phase_offset, sizeof(int32_t) * N_CUDA_ELEM);
+    cudaMalloc((void**)&d_phase_offset, sizeof(int32_t) * n_bits);
     cudaMemcpy(d_bit_stream, bit_stream, sizeof(int32_t) * n_bits, cudaMemcpyHostToDevice);
     cudaMemcpy(d_signal_data, signal_data, sizeof(float) * n_cos_samples * 2, cudaMemcpyHostToDevice);
 
@@ -78,14 +78,14 @@ void modulate_bpsk_cuda(int32_t n_cos_samples,
     {
         set_phase_offset_cuda<<<blocksPerGrid, threadsPerBlock>>>(d_bit_stream,
                                                                   n_bits - (bit_idx * N_CUDA_ELEM),
-                                                                  d_phase_offset);
+                                                                  &d_phase_offset[bit_idx]);
     }
-    cudaDeviceSynchronize();
+
     for(bit_idx = 0; bit_idx < n_bits; bit_idx += N_CUDA_ELEM)
     {
         int32_t n_cuda_bits = n_bits - (bit_idx * N_CUDA_ELEM);
-        set_phase_shift_cuda<<<blocksPerGrid, threadsPerBlock>>>(d_phase_offset, n_cos_samples, n_cuda_bits, d_signal_data, d_modulated_signal);
-        cudaMemcpy(&modulated_signal[bit_idx * n_cos_samples], d_modulated_signal, sizeof(float) * n_cos_samples * N_CUDA_ELEM, cudaMemcpyDeviceToHost);
+        set_phase_shift_cuda<<<blocksPerGrid, threadsPerBlock>>>(&d_phase_offset[bit_idx], n_cos_samples, n_cuda_bits, d_signal_data, d_modulated_signal);
+        cudaMemcpy(&modulated_signal[bit_idx * n_cos_samples], d_modulated_signal, sizeof(float) * n_cos_samples * n_cuda_bits, cudaMemcpyDeviceToHost);
 
 //        for(int32_t i = 0; i < 360; ++i)
 //        {
@@ -95,5 +95,6 @@ void modulate_bpsk_cuda(int32_t n_cos_samples,
     cudaFree((void*)d_modulated_signal);
     cudaFree((void*)d_signal_data);
     cudaFree((void*)d_bit_stream);
+    cudaFree((void*)d_phase_offset);
 
 }

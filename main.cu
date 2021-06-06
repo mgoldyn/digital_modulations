@@ -271,6 +271,10 @@ int main(void) {
         if (demodulated_bits[i] != bit_stream[i]) {
             printf(" %d ||| %d != %d\n",i,  demodulated_bits[i], bit_stream[i]);
         }
+        else
+        {
+            printf("good\n");
+        }
     }
 
     memory_free();
