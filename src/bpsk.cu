@@ -3,7 +3,7 @@
 #include "..\inc\psk_common.h"
 
 #define BSPK_PHASE_0 90
-#define BPSK_PHASE_1 180
+#define BPSK_PHASE_1 270
 
 void modulate_bpsk(int32_t n_cos_samples,
                    int32_t n_bits,

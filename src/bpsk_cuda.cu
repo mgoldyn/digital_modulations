@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 #define BSPK_PHASE_0 90
-#define BPSK_PHASE_1 180
+#define BPSK_PHASE_1 270
 
 #define N_CUDA_ELEM 128
 

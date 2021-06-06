@@ -134,7 +134,7 @@ void demodulate(char* mod,
                 const float *modulated_signal2 = &modulated_signal[bit_idx];
                 if (modulated_signal2[j] == signal_data[(n_cos_samples * 90 / N_MAX_DEGREE) + j]) {
                     bpsk_0_counter++;
-                } else if (modulated_signal2[j] == signal_data[(n_cos_samples * 180 / N_MAX_DEGREE) + j]) {
+                } else if (modulated_signal2[j] == signal_data[(n_cos_samples * 270 / N_MAX_DEGREE) + j]) {
                     bpsk_1_counter++;
                 }
             }

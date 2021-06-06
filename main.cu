@@ -248,7 +248,7 @@ int main(void) {
     float amp = 1;
     float freq = 1;
     int32_t cos_factor = 2;
-    int32_t n_bits = 2000;
+    int32_t n_bits = 4;
     cudaFree(0);
     modulate(amp,
               freq,
