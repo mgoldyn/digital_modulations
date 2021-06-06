@@ -243,12 +243,12 @@ int main(void) {
 //    {
 //        printf("dziala\n");
 //    }
-    int32_t bit_stream[] = {0, 0, 1,1};//,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1};
-    char bps[] = "bpskc";
+    int32_t bit_stream[] = {0, 0, 0, 1,1,0,1,1};//,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1};
+    char bps[] = "qpskc";
     float amp = 1;
     float freq = 1;
     int32_t cos_factor = 2;
-    int32_t n_bits = 4;
+    int32_t n_bits = 8;
     cudaFree(0);
     modulate(amp,
               freq,
@@ -277,6 +277,6 @@ int main(void) {
         }
     }
 
-    memory_free();
+//    memory_free();
     return 0;
 }

@@ -46,7 +46,6 @@ set_phase_shift_cuda(int32_t* phase_offset,
         {
             modulated_signal_ptr[sig_idx] = signal_data[phase_offset[bit_idx] + sig_idx];
         }
-//        modulated_signal[sig_idx] = signal_data[scaled_phase_shift + sig_idx];
     }
 }
 
@@ -76,7 +75,7 @@ void modulate_bpsk_cuda(int32_t n_cos_samples,
     for(; bit_idx < n_bits; bit_idx += N_CUDA_ELEM)
     {
         int32_t n_cuda_bits = n_bits < N_CUDA_ELEM ? n_bits : bit_idx + N_CUDA_ELEM > n_bits ? n_bits - bit_idx: N_CUDA_ELEM;
-        set_phase_offset_cuda<<<blocksPerGrid, threadsPerBlock>>>(d_bit_stream,
+        set_phase_offset_cuda<<<blocksPerGrid, threadsPerBlock>>>(&d_bit_stream[bit_idx],
                                                                   n_cuda_bits,
                                                                   &d_phase_offset[bit_idx]);
     }
