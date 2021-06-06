@@ -244,7 +244,7 @@ int main(void) {
 //        printf("dziala\n");
 //    }
     int32_t bit_stream[] = {0, 0, 0, 1,1,0,1,1};//,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1};
-    char bps[] = "qpskc";
+    char bps[] = "16qamc";
     float amp = 1;
     float freq = 1;
     int32_t cos_factor = 2;
