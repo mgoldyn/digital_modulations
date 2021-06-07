@@ -174,7 +174,8 @@ class modulation_c():
     def modulate(self, amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream):
 
         self.set_mod_parameters(amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream)
-        self.modulation_dll.cuda_dummy_free()
+        self.modulation_dll.alloc_cuda(self.n_bits_c)
+        self.modulation_dll.alloc_memory(self.n_bits_c)
         end_time = 0
         for i in range(1000):
             start = timer()
@@ -207,6 +208,7 @@ class modulation_c():
             self.mod_data_window.show()
 
             self.modulation_dll.memory_free()
+            self.modulation_dll.free_cuda()
         else:
             print("Modulation exit with error code = ", status)
 
