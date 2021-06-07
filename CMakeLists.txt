@@ -16,6 +16,7 @@ add_executable(digital_modulations
                src/psk_common.cu
                src/qam.cu
                src/qpsk.cu
+#        inc/cuda_common.h src/cuda_common.cu
         )
 #-gencode=arch=compute_75,code=compute_75 -shared --output-file=main2.dll
 set_property(TARGET digital_modulations PROPERTY CUDA_ARCHITECTURES 75)

@@ -11,26 +11,7 @@
 #define N_CUDA_ELEM 512
 
 __global__ void
-set_phase_offset_cuda(const int32_t* bit_stream,
-                      int32_t n_bits,
-                      int32_t* phase_offset)
-{
-    int32_t bit_idx = blockDim.x * blockIdx.x + threadIdx.x;
-    if(bit_idx < n_bits)
-    {
-        if(!bit_stream[bit_idx])
-        {
-            phase_offset[bit_idx] = (int32_t)((float)BSPK_PHASE_0 * ((float)360)/ N_MAX_DEGREE);
-        }
-        else
-        {
-            phase_offset[bit_idx] = (int32_t)((float)BPSK_PHASE_1 * ((float)360)/ N_MAX_DEGREE);
-        }
-    }
-}
-
-__global__ void
-set_phase_shift_cuda(int32_t* phase_offset,
+set_phase_shift_cuda(int32_t* bit_stream,
                      int32_t n_cos_samples,
                      int32_t n_bits,
                      const float* signal_data,
@@ -40,30 +21,20 @@ set_phase_shift_cuda(int32_t* phase_offset,
     int32_t bit_idx = blockDim.x * blockIdx.x + threadIdx.x;
     if(bit_idx < n_bits)
     {
+        int32_t phase_offset;
+        if(!bit_stream[bit_idx])
+        {
+            phase_offset = (int32_t)((float)BSPK_PHASE_0 * ((float)360)/ N_MAX_DEGREE);
+        }
+        else
+        {
+            phase_offset = (int32_t)((float)BPSK_PHASE_1 * ((float)360)/ N_MAX_DEGREE);
+        }
         float* modulated_signal_ptr = &modulated_signal[bit_idx * n_cos_samples];
         int32_t sig_idx = 0;
         for(; sig_idx < n_cos_samples; ++sig_idx)
         {
-            modulated_signal_ptr[sig_idx] = signal_data[phase_offset[bit_idx] + sig_idx];
-        }
-    }
-}
-__global__ void
-set_phase_shift_cuda_hi(int32_t* phase_offset,
-                     int32_t n_cos_samples,
-                     int32_t n_bits,
-                     const float* signal_data,
-                     float* modulated_signal)
-{
-
-    int32_t bit_idx = blockDim.x * blockIdx.x + threadIdx.x;
-    if(bit_idx < n_bits)
-    {
-        float* modulated_signal_ptr = &modulated_signal[bit_idx * n_cos_samples];
-        int32_t sig_idx = n_cos_samples / 2;
-        for(; sig_idx < n_cos_samples; ++sig_idx)
-        {
-            modulated_signal_ptr[sig_idx] = signal_data[phase_offset[bit_idx] + sig_idx];
+            modulated_signal_ptr[sig_idx] = signal_data[phase_offset + sig_idx];
         }
     }
 }
@@ -77,13 +48,11 @@ void modulate_bpsk_cuda(int32_t n_cos_samples,
     float* d_modulated_signal;
     float* d_signal_data;
     int32_t* d_bit_stream;
-    int32_t* d_phase_offset;
     int32_t n_elem = n_bits < N_CUDA_ELEM ? n_bits : N_CUDA_ELEM;
 
-    cudaMalloc((void**)&d_modulated_signal, sizeof(float) * n_cos_samples * n_elem);
+    cudaMalloc((void**)&d_modulated_signal, sizeof(float) * n_cos_samples * n_bits);
     cudaMalloc((void**)&d_signal_data, sizeof(float) * n_cos_samples * 2);
     cudaMalloc((void**)&d_bit_stream, sizeof(int32_t) * n_bits);
-    cudaMalloc((void**)&d_phase_offset, sizeof(int32_t) * n_bits);
 //    cudaMemcpy(d_bit_stream, bit_stream, sizeof(int32_t) * n_bits, cudaMemcpyHostToDevice);
     cudaMemcpy(d_signal_data, signal_data, sizeof(float) * n_cos_samples * 2, cudaMemcpyHostToDevice);
 
@@ -106,16 +75,13 @@ void modulate_bpsk_cuda(int32_t n_cos_samples,
                     cudaMemcpyHostToDevice,
                     prolog_stream);
 
-    set_phase_offset_cuda<<<blocksPerGrid, threadsPerBlock, 0, prolog_stream>>>(&d_bit_stream[bit_idx],
-                                                                                n_cuda_prolog_bits,
-                                                                                &d_phase_offset[bit_idx]);
-    set_phase_shift_cuda<<<blocksPerGrid, threadsPerBlock, 0, prolog_stream>>>(&d_phase_offset[bit_idx],
+    set_phase_shift_cuda<<<blocksPerGrid, threadsPerBlock, 0, prolog_stream>>>(&d_bit_stream[bit_idx],
                                                                                n_cos_samples,
                                                                                n_cuda_prolog_bits,
                                                                                d_signal_data,
-                                                                               d_modulated_signal);
+                                                                               &d_modulated_signal[bit_idx * n_cos_samples]);
     cudaMemcpyAsync(&modulated_signal[bit_idx * n_cos_samples],
-                    d_modulated_signal,
+                    &d_modulated_signal[bit_idx * n_cos_samples],
                     sizeof(float) * n_cos_samples * n_cuda_prolog_bits,
                     cudaMemcpyDeviceToHost,
                     prolog_stream);
@@ -130,16 +96,13 @@ void modulate_bpsk_cuda(int32_t n_cos_samples,
                         cudaMemcpyHostToDevice,
                         main_stream[(bit_idx / N_CUDA_ELEM) - 1]);
 
-        set_phase_offset_cuda<<<blocksPerGrid, threadsPerBlock, 0, main_stream[(bit_idx / N_CUDA_ELEM) - 1]>>>(&d_bit_stream[bit_idx],
-                                                                                                                N_CUDA_ELEM,
-                                                                                                                &d_phase_offset[bit_idx]);
-        set_phase_shift_cuda<<<blocksPerGrid, threadsPerBlock, 0, main_stream[(bit_idx / N_CUDA_ELEM) - 1]>>>(&d_phase_offset[bit_idx],
+        set_phase_shift_cuda<<<blocksPerGrid, threadsPerBlock, 0, main_stream[(bit_idx / N_CUDA_ELEM) - 1]>>>(&d_bit_stream[bit_idx],
                                                                                                                n_cos_samples,
                                                                                                                N_CUDA_ELEM,
                                                                                                                d_signal_data,
-                                                                                                               d_modulated_signal);
+                                                                                                               &d_modulated_signal[bit_idx * n_cos_samples]);
         cudaMemcpyAsync(&modulated_signal[bit_idx * n_cos_samples],
-                        d_modulated_signal,
+                        &d_modulated_signal[bit_idx * n_cos_samples],
                         sizeof(float) * n_cos_samples * N_CUDA_ELEM,
                         cudaMemcpyDeviceToHost,
                         main_stream[(bit_idx / N_CUDA_ELEM) - 1]);
@@ -157,16 +120,13 @@ void modulate_bpsk_cuda(int32_t n_cos_samples,
                         cudaMemcpyHostToDevice,
                         epilog_stream);
 
-        set_phase_offset_cuda<<<blocksPerGrid, threadsPerBlock, 0, epilog_stream>>>(&d_bit_stream[bit_idx],
-                                                                                    n_epilog_bits,
-                                                                                    &d_phase_offset[bit_idx]);
-        set_phase_shift_cuda<<<blocksPerGrid, threadsPerBlock, 0, epilog_stream>>>(&d_phase_offset[bit_idx],
+        set_phase_shift_cuda<<<blocksPerGrid, threadsPerBlock, 0, epilog_stream>>>(&d_bit_stream[bit_idx],
                                                                                    n_cos_samples,
                                                                                    n_epilog_bits,
                                                                                    d_signal_data,
-                                                                                   d_modulated_signal);
+                                                                                   &d_modulated_signal[bit_idx * n_cos_samples]);
         cudaMemcpyAsync(&modulated_signal[bit_idx * n_cos_samples],
-                        d_modulated_signal,
+                        &d_modulated_signal[bit_idx * n_cos_samples],
                         sizeof(float) * n_cos_samples * n_epilog_bits,
                         cudaMemcpyDeviceToHost,
                         epilog_stream);
@@ -181,6 +141,5 @@ void modulate_bpsk_cuda(int32_t n_cos_samples,
     cudaFree((void*)d_modulated_signal);
     cudaFree((void*)d_signal_data);
     cudaFree((void*)d_bit_stream);
-    cudaFree((void*)d_phase_offset);
 
 }
