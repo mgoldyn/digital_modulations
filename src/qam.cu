@@ -4,7 +4,7 @@
 
 #include <cuda_runtime.h>
 
-#define N_CUDA_ELEM 64
+#define N_CUDA_ELEM 512
 
 void set_phase_and_amplitude(int32_t n_cos_samples,
                              int32_t phase_shift,
@@ -211,13 +211,13 @@ void modulate_16qam_cuda(int32_t n_cos_samples,
 
     int32_t n_data = n_bits / 4;
 
-    int32_t n_elem = n_data < N_CUDA_ELEM ? n_data : N_CUDA_ELEM;
-
-    cudaMalloc((void**)&d_modulated_signal, sizeof(float) * n_cos_samples * n_elem);
-    cudaMalloc((void**)&d_signal_data, sizeof(float) * n_cos_samples * 2);
-    cudaMalloc((void**)&d_bit_stream, sizeof(int32_t) * n_bits);
     cudaMemcpy(d_signal_data, signal_data, sizeof(float) * n_cos_samples * 2, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_bit_stream, bit_stream, sizeof(int32_t) * n_bits, cudaMemcpyHostToDevice);
+//    cudaMemcpy(d_bit_stream, bit_stream, sizeof(int32_t) * n_bits, cudaMemcpyHostToDevice);
+    cudaStream_t stream[20];
+    for(int32_t i  = 0; i < (n_data + N_CUDA_ELEM + 1) / N_CUDA_ELEM; ++i)
+    {
+        cudaStreamCreate(&stream[i]);
+    }
 
     int32_t threadsPerBlock = 16;
     int32_t blocksPerGrid   = (N_CUDA_ELEM + threadsPerBlock - 1) / threadsPerBlock;
@@ -226,14 +226,26 @@ void modulate_16qam_cuda(int32_t n_cos_samples,
     for(data_idx = 0; data_idx < n_data; data_idx += N_CUDA_ELEM)
     {
         int32_t n_cuda_bits = n_data < N_CUDA_ELEM ? n_data : data_idx + N_CUDA_ELEM > n_data ? n_data - data_idx : N_CUDA_ELEM;
-        set_amplitude_and_phase_16qam_cuda<<<blocksPerGrid, threadsPerBlock>>>(&d_bit_stream[data_idx],
-                                                                               n_cuda_bits,
-                                                                               n_cos_samples,
-                                                                               d_signal_data,
-                                                                               d_modulated_signal);
-        cudaMemcpy(&modulated_signal[data_idx * n_cos_samples],
-                   d_modulated_signal,
-                   sizeof(float) * n_cos_samples * n_cuda_bits,
-                   cudaMemcpyDeviceToHost);
+        cudaMemcpyAsync(&d_bit_stream[data_idx],
+                        bit_stream,
+                        sizeof(int32_t) * n_cuda_bits * 4,
+                        cudaMemcpyHostToDevice,
+                        stream[data_idx / N_CUDA_ELEM]);
+
+        set_amplitude_and_phase_16qam_cuda<<<blocksPerGrid, threadsPerBlock, 0,  stream[data_idx / N_CUDA_ELEM]>>>(&d_bit_stream[data_idx],
+                                                                                                                   n_cuda_bits,
+                                                                                                                   n_cos_samples,
+                                                                                                                   d_signal_data,
+                                                                                                                   &d_modulated_signal[data_idx * n_cos_samples]);
+        cudaMemcpyAsync(&modulated_signal[data_idx * n_cos_samples],
+                        &d_modulated_signal[data_idx * n_cos_samples],
+                        sizeof(float) * n_cos_samples * n_cuda_bits,
+                        cudaMemcpyDeviceToHost,
+                        stream[data_idx / N_CUDA_ELEM]);
+//        cudaDeviceSynchronize();
+    }
+    for(int32_t i  = 0; i < (n_data + N_CUDA_ELEM + 1) / N_CUDA_ELEM; ++i)
+    {
+        cudaStreamDestroy(stream[i]);
     }
 }
