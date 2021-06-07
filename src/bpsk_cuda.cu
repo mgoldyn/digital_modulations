@@ -8,7 +8,7 @@
 #define BSPK_PHASE_0 90
 #define BPSK_PHASE_1 270
 
-#define N_CUDA_ELEM 128
+#define N_CUDA_ELEM 512
 
 __global__ void
 set_phase_offset_cuda(const int32_t* bit_stream,
@@ -48,6 +48,25 @@ set_phase_shift_cuda(int32_t* phase_offset,
         }
     }
 }
+__global__ void
+set_phase_shift_cuda_hi(int32_t* phase_offset,
+                     int32_t n_cos_samples,
+                     int32_t n_bits,
+                     const float* signal_data,
+                     float* modulated_signal)
+{
+
+    int32_t bit_idx = blockDim.x * blockIdx.x + threadIdx.x;
+    if(bit_idx < n_bits)
+    {
+        float* modulated_signal_ptr = &modulated_signal[bit_idx * n_cos_samples];
+        int32_t sig_idx = n_cos_samples / 2;
+        for(; sig_idx < n_cos_samples; ++sig_idx)
+        {
+            modulated_signal_ptr[sig_idx] = signal_data[phase_offset[bit_idx] + sig_idx];
+        }
+    }
+}
 
 void modulate_bpsk_cuda(int32_t n_cos_samples,
                         int32_t n_bits,
@@ -65,33 +84,100 @@ void modulate_bpsk_cuda(int32_t n_cos_samples,
     cudaMalloc((void**)&d_signal_data, sizeof(float) * n_cos_samples * 2);
     cudaMalloc((void**)&d_bit_stream, sizeof(int32_t) * n_bits);
     cudaMalloc((void**)&d_phase_offset, sizeof(int32_t) * n_bits);
-    cudaMemcpy(d_bit_stream, bit_stream, sizeof(int32_t) * n_bits, cudaMemcpyHostToDevice);
+//    cudaMemcpy(d_bit_stream, bit_stream, sizeof(int32_t) * n_bits, cudaMemcpyHostToDevice);
     cudaMemcpy(d_signal_data, signal_data, sizeof(float) * n_cos_samples * 2, cudaMemcpyHostToDevice);
 
     int threadsPerBlock = 16;
     int blocksPerGrid = (N_CUDA_ELEM + threadsPerBlock - 1) / threadsPerBlock;
-
+    cudaStream_t prolog_stream;
+    cudaStream_t main_stream[8];
+    cudaStream_t epilog_stream;
+    cudaStreamCreate(&prolog_stream);
+    for(int32_t i  = 0; i < (n_bits - N_CUDA_ELEM) / N_CUDA_ELEM; ++i)
+    {
+        cudaStreamCreate(&main_stream[i]);
+    }
+//    prolog
     int32_t bit_idx = 0;
-    for(; bit_idx < n_bits; bit_idx += N_CUDA_ELEM)
+    int32_t n_cuda_prolog_bits = n_bits < N_CUDA_ELEM ? n_bits : bit_idx + N_CUDA_ELEM > n_bits ? n_bits - bit_idx: N_CUDA_ELEM;
+    cudaMemcpyAsync(&d_bit_stream[bit_idx],
+                    bit_stream,
+                    sizeof(int32_t) * n_cuda_prolog_bits,
+                    cudaMemcpyHostToDevice,
+                    prolog_stream);
+
+    set_phase_offset_cuda<<<blocksPerGrid, threadsPerBlock, 0, prolog_stream>>>(&d_bit_stream[bit_idx],
+                                                                                n_cuda_prolog_bits,
+                                                                                &d_phase_offset[bit_idx]);
+    set_phase_shift_cuda<<<blocksPerGrid, threadsPerBlock, 0, prolog_stream>>>(&d_phase_offset[bit_idx],
+                                                                               n_cos_samples,
+                                                                               n_cuda_prolog_bits,
+                                                                               d_signal_data,
+                                                                               d_modulated_signal);
+    cudaMemcpyAsync(&modulated_signal[bit_idx * n_cos_samples],
+                    d_modulated_signal,
+                    sizeof(float) * n_cos_samples * n_cuda_prolog_bits,
+                    cudaMemcpyDeviceToHost,
+                    prolog_stream);
+//  main loop
+    int32_t n_main_loop_bits = n_bits - N_CUDA_ELEM;
+    bit_idx = N_CUDA_ELEM;
+    for(; bit_idx < n_main_loop_bits; bit_idx += N_CUDA_ELEM)
     {
-        int32_t n_cuda_bits = n_bits < N_CUDA_ELEM ? n_bits : bit_idx + N_CUDA_ELEM > n_bits ? n_bits - bit_idx: N_CUDA_ELEM;
-        set_phase_offset_cuda<<<blocksPerGrid, threadsPerBlock>>>(&d_bit_stream[bit_idx],
-                                                                  n_cuda_bits,
-                                                                  &d_phase_offset[bit_idx]);
+        cudaMemcpyAsync(&d_bit_stream[bit_idx],
+                        bit_stream,
+                        sizeof(int32_t) * N_CUDA_ELEM,
+                        cudaMemcpyHostToDevice,
+                        main_stream[(bit_idx / N_CUDA_ELEM) - 1]);
+
+        set_phase_offset_cuda<<<blocksPerGrid, threadsPerBlock, 0, main_stream[(bit_idx / N_CUDA_ELEM) - 1]>>>(&d_bit_stream[bit_idx],
+                                                                                                                N_CUDA_ELEM,
+                                                                                                                &d_phase_offset[bit_idx]);
+        set_phase_shift_cuda<<<blocksPerGrid, threadsPerBlock, 0, main_stream[(bit_idx / N_CUDA_ELEM) - 1]>>>(&d_phase_offset[bit_idx],
+                                                                                                               n_cos_samples,
+                                                                                                               N_CUDA_ELEM,
+                                                                                                               d_signal_data,
+                                                                                                               d_modulated_signal);
+        cudaMemcpyAsync(&modulated_signal[bit_idx * n_cos_samples],
+                        d_modulated_signal,
+                        sizeof(float) * n_cos_samples * N_CUDA_ELEM,
+                        cudaMemcpyDeviceToHost,
+                        main_stream[(bit_idx / N_CUDA_ELEM) - 1]);
     }
-    for(bit_idx = 0; bit_idx < n_bits; bit_idx += N_CUDA_ELEM)
+
+//    epilog
+//printf("mgoldyn bit_idx = %d\n", bit_idx);
+    int32_t n_epilog_bits = n_bits - bit_idx;
+    if(n_epilog_bits > 0)
     {
-        int32_t n_cuda_bits = n_bits < N_CUDA_ELEM ? n_bits : bit_idx + N_CUDA_ELEM > n_bits ? n_bits - bit_idx: N_CUDA_ELEM;
-        set_phase_shift_cuda<<<blocksPerGrid, threadsPerBlock>>>(&d_phase_offset[bit_idx],
-                                                                 n_cos_samples,
-                                                                 n_cuda_bits,
-                                                                 d_signal_data,
-                                                                 d_modulated_signal);
-        cudaMemcpy(&modulated_signal[bit_idx * n_cos_samples],
-                   d_modulated_signal,
-                   sizeof(float) * n_cos_samples * n_cuda_bits,
-                   cudaMemcpyDeviceToHost);
+        cudaStreamCreate(&epilog_stream);
+        cudaMemcpyAsync(&d_bit_stream[bit_idx],
+                        bit_stream,
+                        sizeof(int32_t) * n_epilog_bits,
+                        cudaMemcpyHostToDevice,
+                        epilog_stream);
+
+        set_phase_offset_cuda<<<blocksPerGrid, threadsPerBlock, 0, epilog_stream>>>(&d_bit_stream[bit_idx],
+                                                                                    n_epilog_bits,
+                                                                                    &d_phase_offset[bit_idx]);
+        set_phase_shift_cuda<<<blocksPerGrid, threadsPerBlock, 0, epilog_stream>>>(&d_phase_offset[bit_idx],
+                                                                                   n_cos_samples,
+                                                                                   n_epilog_bits,
+                                                                                   d_signal_data,
+                                                                                   d_modulated_signal);
+        cudaMemcpyAsync(&modulated_signal[bit_idx * n_cos_samples],
+                        d_modulated_signal,
+                        sizeof(float) * n_cos_samples * n_epilog_bits,
+                        cudaMemcpyDeviceToHost,
+                        epilog_stream);
+        cudaStreamDestroy(epilog_stream);
     }
+    for(int32_t i  = 0; i < (n_bits - N_CUDA_ELEM) / N_CUDA_ELEM; ++i)
+    {
+        cudaStreamDestroy(main_stream[i]);
+    }
+    cudaStreamDestroy(prolog_stream);
+
     cudaFree((void*)d_modulated_signal);
     cudaFree((void*)d_signal_data);
     cudaFree((void*)d_bit_stream);

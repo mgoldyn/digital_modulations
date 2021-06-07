@@ -3,7 +3,7 @@
 
 #include <cuda_runtime.h>
 
-#define N_CUDA_ELEM 128
+#define N_CUDA_ELEM 64
 
 void set_phase_and_amplitude(int32_t n_cos_samples,
                              int32_t phase_shift,
