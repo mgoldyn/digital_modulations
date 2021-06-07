@@ -60,7 +60,7 @@ void modulate_bpsk_cuda(int32_t n_cos_samples,
     int threadsPerBlock = 16;
     int blocksPerGrid = (N_CUDA_ELEM + threadsPerBlock - 1) / threadsPerBlock;
     cudaStream_t prolog_stream;
-    cudaStream_t main_stream[8];
+    cudaStream_t main_stream[20];
     cudaStream_t epilog_stream;
     cudaStreamCreate(&prolog_stream);
     for(int32_t i  = 0; i < (n_bits - N_CUDA_ELEM) / N_CUDA_ELEM; ++i)
