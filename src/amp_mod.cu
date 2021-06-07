@@ -1,4 +1,5 @@
 #include "..\inc\amp_mod.h"
+#include "..\inc\cuda_common.h"
 #include <cuda_runtime.h>
 
 #define AM_AMP_0 0.3f
@@ -50,10 +51,8 @@ void modulate_am_cuda(int32_t n_cos_samples,
                       const float*  signal_data,
                       float*  modulated_signal)
 {
-    float* d_modulated_signal;
-    float* d_signal_data;
-    cudaMalloc((void**)&d_modulated_signal, sizeof(float) * n_cos_samples * n_bits);
-    cudaMalloc((void**)&d_signal_data, sizeof(float) * n_cos_samples);
+    float* d_modulated_signal = get_modulated_signal();
+    float* d_signal_data = get_signal_data();
     cudaMemcpy(d_signal_data, signal_data, sizeof(float) * n_cos_samples, cudaMemcpyHostToDevice);
 
     int threadsPerBlock = 256;
@@ -74,6 +73,4 @@ void modulate_am_cuda(int32_t n_cos_samples,
         set_amplitude_cuda<<<blocksPerGrid, threadsPerBlock>>>(n_cos_samples, amp_factor, d_signal_data, &d_modulated_signal[bit_idx * n_cos_samples]);
     }
     cudaMemcpy(modulated_signal, d_modulated_signal, sizeof(float) * n_cos_samples * n_bits, cudaMemcpyDeviceToHost);
-    cudaFree((void*)d_modulated_signal);
-    cudaFree((void*)d_signal_data);
 }

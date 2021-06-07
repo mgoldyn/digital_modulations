@@ -1,5 +1,6 @@
 #include "..\inc\qam.h"
 #include "..\inc\consts.h"
+#include "..\inc\cuda_common.h"
 
 #include <cuda_runtime.h>
 
@@ -204,9 +205,9 @@ void modulate_16qam_cuda(int32_t n_cos_samples,
                          const float* signal_data,
                          float*  modulated_signal)
 {
-    float* d_modulated_signal;
-    float* d_signal_data;
-    int32_t* d_bit_stream;
+    float* d_modulated_signal = get_modulated_signal();
+    float* d_signal_data = get_signal_data();
+    int32_t* d_bit_stream = get_bit_stream();
 
     int32_t n_data = n_bits / 4;
 
@@ -235,8 +236,4 @@ void modulate_16qam_cuda(int32_t n_cos_samples,
                    sizeof(float) * n_cos_samples * n_cuda_bits,
                    cudaMemcpyDeviceToHost);
     }
-
-    cudaFree((void*)d_modulated_signal);
-    cudaFree((void*)d_signal_data);
-    cudaFree((void*)d_bit_stream);
 }

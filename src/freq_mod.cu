@@ -1,5 +1,6 @@
 #include "..\inc\freq_mod.h"
 #include "..\inc\consts.h"
+#include "..\inc\cuda_common.h"
 
 #include "math.h"
 #include <cuda_runtime.h>
@@ -78,11 +79,9 @@ void modulate_fm_cuda(int32_t n_cos_samples,
     int32_t bit_idx = 0;
     int32_t freq_sig_idx;
 
-    float* d_modulated_signal;
-    float* d_signal_data;
+    float* d_modulated_signal = get_modulated_signal();
+    float* d_signal_data = get_signal_data();
 
-    cudaMalloc((void**)&d_modulated_signal, sizeof(float) * n_cos_samples * n_bits);
-    cudaMalloc((void**)&d_signal_data, sizeof(float) * n_cos_samples * 2);
     cudaMemcpy(d_signal_data, signal_data, sizeof(float) * n_cos_samples * 2, cudaMemcpyHostToDevice);
 
     int threadsPerBlock = 256;
@@ -101,6 +100,4 @@ void modulate_fm_cuda(int32_t n_cos_samples,
         set_freq_cuda<<<blocksPerGrid, threadsPerBlock>>>(n_cos_samples, n_cos_samples * freq_sig_idx, d_signal_data, &d_modulated_signal[bit_idx * n_cos_samples]);
     }
     cudaMemcpy(modulated_signal, d_modulated_signal, sizeof(float) * n_cos_samples * n_bits, cudaMemcpyDeviceToHost);
-    cudaFree((void*)d_modulated_signal);
-    cudaFree((void*)d_signal_data);
 }
