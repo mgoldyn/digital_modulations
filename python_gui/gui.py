@@ -146,7 +146,7 @@ class modulation_c():
         self.mod_type = ""
         self.bit_stream = 0
         self.n_samples_factor = 0
-        self.modulation_dll = cdll.LoadLibrary("D:\\magisterka\\git\\digital_modulations\\main2.dll")
+        self.modulation_dll = cdll.LoadLibrary("D:\\magisterka\\git\\digital_modulations\\cmake-build-debug\\digital_modulations_lib.dll")
         self.mod_data_window = modulated_data_window()
         self.n_samples = 0
         self.demodulation_c = demodulation_c()
