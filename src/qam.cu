@@ -226,13 +226,13 @@ void modulate_16qam_cuda(int32_t n_cos_samples,
     for(data_idx = 0; data_idx < n_data; data_idx += N_CUDA_ELEM)
     {
         int32_t n_cuda_bits = n_data < N_CUDA_ELEM ? n_data : data_idx + N_CUDA_ELEM > n_data ? n_data - data_idx : N_CUDA_ELEM;
-        cudaMemcpyAsync(&d_bit_stream[data_idx],
+        cudaMemcpyAsync(&d_bit_stream[data_idx * 4],
                         bit_stream,
                         sizeof(int32_t) * n_cuda_bits * 4,
                         cudaMemcpyHostToDevice,
                         stream[data_idx / N_CUDA_ELEM]);
 
-        set_amplitude_and_phase_16qam_cuda<<<blocksPerGrid, threadsPerBlock, 0,  stream[data_idx / N_CUDA_ELEM]>>>(&d_bit_stream[data_idx],
+        set_amplitude_and_phase_16qam_cuda<<<blocksPerGrid, threadsPerBlock, 0,  stream[data_idx / N_CUDA_ELEM]>>>(&d_bit_stream[data_idx * 4],
                                                                                                                    n_cuda_bits,
                                                                                                                    n_cos_samples,
                                                                                                                    d_signal_data,

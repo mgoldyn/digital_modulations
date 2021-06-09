@@ -6,8 +6,9 @@
 
 #define C_EXTERN extern "C"
 
-typedef int int32_t;
+
 typedef unsigned int uint32_t;
+typedef int int32_t;
 
 typedef struct cint32_t
 {

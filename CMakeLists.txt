@@ -3,8 +3,9 @@ project(digital_modulations CUDA)
 
 set(CMAKE_CUDA_STANDARD 98)
 
-include_directories(inc)
-include_directories(D:/cuda/include)
+include_directories(D:/magisterka/git/digital_modulations/inc/)
+include_directories(D:/cuda/include/)
+
 add_executable(digital_modulations
                main.cu
                src/amp_mod.cu
@@ -15,8 +16,9 @@ add_executable(digital_modulations
                src/psk_common.cu
                src/qam.cu
                src/qpsk.cu
-        inc/cuda_common.h src/cuda_common.cu
+               src/cuda_common.cu
         )
+
 add_library(digital_modulations_lib SHARED
         main.cu
         src/amp_mod.cu
