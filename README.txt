@@ -4,4 +4,4 @@ profiler gui nvvp -vm "C:\Program Files\Java\jdk1.8.0_291\jre\bin\java"
 
 profiler commands:
  set PATH=%PATH%;D:\cuda\extras\CUPTI\lib64 
- nvvp -vm "C:\Program Files\Java\jdk1.8.0_291\jre\bin\java"
+ nvprof sciezka do binarki
