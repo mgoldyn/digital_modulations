@@ -31,7 +31,7 @@ void init_fm_cos_lut(const psk_params*  params, float*  signal_lut)
     }
 }
 
-static void set_freq(int32_t n_cos_samples, int32_t freq_sig_idx, const float*  signal_data, float*  modulated_signal)
+inline void set_freq(int32_t n_cos_samples, int32_t freq_sig_idx, const float*  signal_data, float*  modulated_signal)
 {
     int32_t sig_idx = 0;
     const int32_t car_signal_offset = n_cos_samples * freq_sig_idx;

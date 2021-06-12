@@ -123,13 +123,13 @@ class demodulation_c():
     def get_constellation(self):
         self.constellation_data_x = []
         self.constellation_data_y = []
-        if self.mod == "bpsk" or self.mod == "bpskc"\
-                or self.mod == "fm" or self.mod == "fmc"\
-                or self.mod == "am" or self.mod == "amc":
+        if self.mod == "bpsk_c" or self.mod == "bpsk_cuda"\
+                or self.mod == "bfsk_c" or self.mod == "bfsk_cuda"\
+                or self.mod == "bask_c" or self.mod == "bask_cuda":
             self.create_constellation_2_points()
-        elif self.mod == "qpsk" or self.mod == "qpskc":
+        elif self.mod == "qpsk_c" or self.mod == "qpsk_cuda":
             self.create_constellation_4_points()
-        elif self.mod == "16qam" or self.mod == "16qamc":
+        elif self.mod == "16qam_c" or self.mod == "16qam_cuda":
             self.create_constellation_16_points()
 
         self.demodulated_window.show_mod_data(self.constellation_data_y, self.constellation_data_x)
@@ -155,9 +155,9 @@ class modulation_c():
         self.out_text = out_text
 
     def set_mod_parameters(self, amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream):
-        if mod_type == "qpsk" or mod_type == "qpskc":
+        if mod_type == "qpsk_c" or mod_type == "qpsk_cuda":
             self.n_samples_factor = 2
-        elif mod_type == "16qam" or mod_type == "16qamc":
+        elif mod_type == "16qam_c" or mod_type == "16qam_cuda":
             self.n_samples_factor = 4
         else:
             self.n_samples_factor = 1
@@ -174,7 +174,6 @@ class modulation_c():
     def modulate(self, amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream):
 
         self.set_mod_parameters(amp, freq, cos_fac_idx, n_bits, mod_type, bit_stream)
-        self.modulation_dll.alloc_cuda(self.n_bits_c)
         self.modulation_dll.alloc_memory(self.n_bits_c)
         end_time = 0
         for i in range(1000):
@@ -207,8 +206,12 @@ class modulation_c():
             self.mod_data_window.show_mod_data(modulated_data)
             self.mod_data_window.show()
 
+            f = open("dane_wyjsciowe.txt", "w")
+            f.write(str(demodulated_bits))
+            f.write()
+            f.close()
+
             self.modulation_dll.memory_free()
-            self.modulation_dll.free_cuda()
         else:
             print("Modulation exit with error code = ", status)
 
@@ -238,6 +241,7 @@ class MainWindow(QMainWindow):
 
         self.freq_spinbox = QtWidgets.QDoubleSpinBox(self)
         self.freq_spinbox.setMinimum(1)
+        self.freq_spinbox.setMaximum(100000)
         self.freq_spinbox.move(200, 100)
 
         self.freq_label = QtWidgets.QLabel(self)
@@ -272,25 +276,25 @@ class MainWindow(QMainWindow):
 
         checkbox_location = 20
         checkbox_width = 20
-        self.bpsk_checkbox = QCheckBox("bpsk", self)
+        self.bpsk_checkbox = QCheckBox("bpsk_c", self)
         self.bpsk_checkbox.move(20, checkbox_location)
-        self.bpsk_cuda_checkbox = QCheckBox("bpskc", self)
+        self.bpsk_cuda_checkbox = QCheckBox("bpsk_cuda", self)
         self.bpsk_cuda_checkbox.move(20, checkbox_location + checkbox_width * 1)
-        self.qpsk_checkbox = QCheckBox("qpsk", self)
+        self.qpsk_checkbox = QCheckBox("qpsk_c", self)
         self.qpsk_checkbox.move(20, checkbox_location + checkbox_width * 2)
-        self.qpsk_cuda_checkbox = QCheckBox("qpskc", self)
+        self.qpsk_cuda_checkbox = QCheckBox("qpsk_cuda", self)
         self.qpsk_cuda_checkbox.move(20, checkbox_location + checkbox_width * 3)
-        self.am_checkbox = QCheckBox("am", self)
+        self.am_checkbox = QCheckBox("bask_c", self)
         self.am_checkbox.move(20, checkbox_location + checkbox_width * 4)
-        self.am_cuda_checkbox = QCheckBox("amc", self)
+        self.am_cuda_checkbox = QCheckBox("bask_cuda", self)
         self.am_cuda_checkbox.move(20, checkbox_location + checkbox_width * 5)
-        self.fm_checkbox = QCheckBox("fm", self)
+        self.fm_checkbox = QCheckBox("bfsk_c", self)
         self.fm_checkbox.move(20, checkbox_location + checkbox_width * 6)
-        self.fm_cuda_checkbox = QCheckBox("fmc", self)
+        self.fm_cuda_checkbox = QCheckBox("bfsk_cuda", self)
         self.fm_cuda_checkbox.move(20, checkbox_location + checkbox_width * 7)
-        self._16qam_checkbox = QCheckBox("16qam", self)
+        self._16qam_checkbox = QCheckBox("16qam_c", self)
         self._16qam_checkbox.move(20, checkbox_location + checkbox_width * 8)
-        self._16qam_cuda_checkbox = QCheckBox("16qamc", self)
+        self._16qam_cuda_checkbox = QCheckBox("16qam_cuda", self)
         self._16qam_cuda_checkbox.move(20, checkbox_location + checkbox_width * 9)
 
         self.mod_checkbox = QButtonGroup()

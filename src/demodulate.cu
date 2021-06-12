@@ -112,18 +112,18 @@ void demodulate(char* mod,
                 int32_t cos_factor,
                 int32_t* demodulated_bits){
     int32_t n_cos_samples = get_n_cos_samples(cos_factor);
-    char bps[] = "bpsk";
-    char bpsc[] = "bpskc";
-    char qps[] = "qpsk";
-    char qpsc[] = "qpskc";
-    char am[] = "am";
-    char amc[] = "amc";
-    char fm[] = "fm";
-    char fmc[] = "fmc";
-    char _16_qam[] = "16qam";
-    char _16_qamc[] = "16qamc";
+    char bpsk_c[] = "bpsk_c";
+    char bpsk_cuda[] = "bpsk_cuda";
+    char qpsk_c[] = "qpsk_c";
+    char qpsk_cuda[] = "qpsk_cuda";
+    char bask_c[] = "bask_c";
+    char bask_cuda[] = "bask_cuda";
+    char bfsk_c[] = "bfsk_c";
+    char bfsk_cuda[] = "bfsk_cuda";
+    char _16_qam_c[] = "16qam_c";
+    char _16_qam_cuda[] = "16qam_cuda";
 
-    if (!strcmp(mod, bps) || !strcmp(mod, bpsc)) {
+    if (!strcmp(mod, bpsk_c) || !strcmp(mod, bpsk_cuda)) {
         int32_t i = 0;
         for (; i < n_bits; ++i) {
             int32_t bit_idx = i * n_cos_samples;
@@ -140,7 +140,7 @@ void demodulate(char* mod,
             }
             demodulated_bits[i] = (int32_t) (bpsk_0_counter < bpsk_1_counter);
         }
-    } else if (!strcmp(mod, qps) || !strcmp(mod, qpsc)) {
+    } else if (!strcmp(mod, qpsk_c) || !strcmp(mod, qpsk_cuda)) {
         int32_t i = 0, k = 0;
         for (; i < n_bits / 2; ++i) {
             int32_t bit_idx = (i) * n_cos_samples;
@@ -166,7 +166,7 @@ void demodulate(char* mod,
                                                  (qpsk_11_counter + qpsk_01_counter));
             k += 2;
         }
-    } else if (!strcmp(mod, fm) || !strcmp(mod, fmc)) {
+    } else if (!strcmp(mod, bfsk_c) || !strcmp(mod, bfsk_cuda)) {
         int32_t i = 0;
         for (; i < n_bits; ++i) {
             int32_t bit_idx = i * n_cos_samples;
@@ -183,7 +183,7 @@ void demodulate(char* mod,
             demodulated_bits[i] = (int32_t) (fm_0_counter < fm_1_counter);
         }
     }
-    else if (!strcmp(mod, am) || !strcmp(mod, amc)) {
+    else if (!strcmp(mod, bask_c) || !strcmp(mod, bask_cuda)) {
         int32_t i = 0;
         for (; i < n_bits; ++i) {
             int32_t bit_idx = i * n_cos_samples;
@@ -200,7 +200,7 @@ void demodulate(char* mod,
             demodulated_bits[i] = (int32_t) (am_0_counter < am_1_counter);
         }
     }
-    else if (!strcmp(mod, _16_qam)  || !strcmp(mod, _16_qamc))
+    else if (!strcmp(mod, _16_qam_c)  || !strcmp(mod, _16_qam_cuda))
     {
         int32_t i = 0, k = 0;
         for (; i < n_bits / 4; ++i) {
@@ -225,5 +225,9 @@ void demodulate(char* mod,
                     (amp_counter[_16_qam_00] + amp_counter[_16_qam_10]));
             k += 4;
         }
+    }
+    else
+    {
+        printf("dupa\n");
     }
 }

@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <time.h>
 
 extern "C"
 {
@@ -23,27 +24,18 @@ C_DELLEXPORT int32_t *demodulated_bits = NULL;
 
 C_DELLEXPORT void alloc_memory(int32_t n_bits)
 {
+    alloc_cuda_memory(n_bits);
     cudaMallocHost(&demodulated_bits, sizeof(int32_t) * n_bits);
-//    psk_cos_lut = (float *) malloc(sizeof(float) * 360 * N_SIGNAL_PERIODS);
     cudaMallocHost(&psk_cos_lut, sizeof(float) * 360 * N_SIGNAL_PERIODS);
     cudaMallocHost(&modulated_data, sizeof(float) * 360 * n_bits);
 }
 
-C_DELLEXPORT void alloc_cuda(int32_t n_bits)
-{
-    alloc_cuda_memory(n_bits);
-}
-
-C_DELLEXPORT void free_cuda()
-{
-    free_cuda_memory();
-}
 C_DELLEXPORT void memory_free()
 {
-        cudaFreeHost(demodulated_bits);
-//        free(psk_cos_lut);
+    free_cuda_memory();
+    cudaFreeHost(demodulated_bits);
     cudaFreeHost(psk_cos_lut);
-        cudaFreeHost(modulated_data);
+    cudaFreeHost(modulated_data);
 }
 
 
@@ -53,35 +45,31 @@ C_DELLEXPORT int32_t modulate(float amplitude,
                               int32_t n_bits,
                               int32_t *bit_stream,
                               char *mod) {
-    char bps[] = "bpsk";
-    char bpsc[] = "bpskc";
-    char qps[] = "qpsk";
-    char qpsc[] = "qpskc";
-    char am[] = "am";
-    char amc[] = "amc";
-    char fm[] = "fm";
-    char fmc[] = "fmc";
-    char _16_qam[] = "16qam";
-    char _16_qamc[] = "16qamc";
+    char bpsk_c[] = "bpsk_c";
+    char bpsk_cuda[] = "bpsk_cuda";
+    char qpsk_c[] = "qpsk_c";
+    char qpsk_cuda[] = "qpsk_cuda";
+    char bask_c[] = "bask_c";
+    char bask_cuda[] = "bask_cuda";
+    char bfsk_c[] = "bfsk_c";
+    char bfsk_cuda[] = "bfsk_cuda";
+    char _16_qam_c[] = "16qam_c";
+    char _16_qam_cuda[] = "16qam_cuda";
 
-//    memory_free();
-//    cudaMallocHost(&demodulated_bits,sizeof(int32_t) * n_bits);
-
-
-    if (!strcmp(mod, bps)) {
+    if (!strcmp(mod, bpsk_c)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
 
         init_psk_cos_lut(&params, psk_cos_lut);
 
         modulate_bpsk(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-    } else if (!strcmp(mod, qps)) {
+    } else if (!strcmp(mod, qpsk_c)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
 
         init_psk_cos_lut(&params, psk_cos_lut);
         modulate_qpsk(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-    } else if (!strcmp(mod, qpsc)) {
+    } else if (!strcmp(mod, qpsk_cuda)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
 
@@ -93,43 +81,43 @@ C_DELLEXPORT int32_t modulate(float amplitude,
 
         init_psk_cos_lut(&params, psk_cos_lut);
         modulate_qpsk_cuda(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-    } else if (!strcmp(mod, am)) {
+    } else if (!strcmp(mod, bask_c)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
 
         init_psk_cos_lut(&params, psk_cos_lut);
         modulate_am(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-    } else if (!strcmp(mod, amc)) {
+    } else if (!strcmp(mod, bask_cuda)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
 
         init_psk_cos_lut(&params, psk_cos_lut);
         modulate_am_cuda(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-    } else if (!strcmp(mod, fm)) {
+    } else if (!strcmp(mod, bfsk_c)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
 
         init_fm_cos_lut(&params, psk_cos_lut);
         modulate_fm(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-    } else if (!strcmp(mod, fmc)) {
+    } else if (!strcmp(mod, bfsk_cuda)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
 
         init_fm_cos_lut(&params, psk_cos_lut);
         modulate_fm_cuda(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-    } else if (!strcmp(mod, bpsc)) {
+    } else if (!strcmp(mod, bpsk_cuda)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
 
         init_psk_cos_lut(&params, psk_cos_lut);
         modulate_bpsk_cuda(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-    } else if (!strcmp(mod, _16_qam)) {
+    } else if (!strcmp(mod, _16_qam_c)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
 
         init_psk_cos_lut(&params, psk_cos_lut);
         modulate_16qam(n_cos_samples, n_bits, bit_stream, psk_cos_lut, modulated_data);
-    } else if (!strcmp(mod, _16_qamc)) {
+    } else if (!strcmp(mod, _16_qam_cuda)) {
         const psk_params params = {amplitude, freq, cos_factor_idx};
         int32_t n_cos_samples = get_n_cos_samples(params.cos_factor_idx);
 
@@ -158,149 +146,44 @@ C_DELLEXPORT void cuda_dummy_free() {
 }
 }
 
-int main(void) {
-//    int32_t bit_stream[] = {1,1, 0, 1};//,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1};
-//    char bps[] = "qpsk";
-//    int32_t n_bits = 4;
-//
-//    init_func(1,
-//        1,
-//        2,
-//              n_bits,
-//              bit_stream,
-//              bps);
-//    int i = 0;
-////    for(; i < 360; ++i)
-////    {
-////        printf("mod[%d] = %f \n", i, modulated_data[i]);
-////    }
-//
-//             int32_t demodulated_bits[4];
-//    demodulate(bps,
-//               0,
-//               0,
-//               psk_cos_lut,
-//               modulated_data,
-//               n_bits,
-//               360,
-//               &demodulated_bits[0]);
-//
-//    int32_t dupsko = 0;
-//    for(i = 0; i < n_bits; ++i)
-//    {
-//        if(demodulated_bits[i] != bit_stream[i])
-//        {dupsko = 1;
-//            printf("nie działa idx = %d out = %d, in = %d\n",i, demodulated_bits[i] ,bit_stream[i]);
-//        }
-//    }
-//    if(dupsko)
-//    {
-//        printf("nie działa\n");
-//    }
-//    else
-//    {
-//        printf("dziala\n");
-//    }
-    int32_t bit_stream[] =
-            {
-//            0,0,0,0, 0,1,1,1,
-//            0,1,0,0, 1,1,1,0,
-//            0,0,1,0, 1,1,0,1,
-//            0,0,0,1, 1,0,1,1};
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
+void prepare_ref_data(int32_t n_bits, int32_t* reference_data)
+{
+    int32_t bit_idx = 0;
+    for(; bit_idx < n_bits; ++bit_idx)
+    {
+        reference_data[bit_idx] = rand() % 2;
+    }
+}
 
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
+int32_t compare_results(int32_t n_bits, int32_t* reference_data, int32_t* result_data)
+{
+    int32_t flag = 0;
+    int32_t bit_idx = 0;
+    for (; bit_idx < n_bits; bit_idx++)
+    {
+        if (result_data[bit_idx] != reference_data[bit_idx])
+        {
+            flag = 1;
+        }
+    }
+    return flag;
+}
 
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1,
-
-            0,0, 0,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,1,
-            0,1, 0,0, 0,1, 0,1, 0,1, 1,0, 0,1, 1,1,
-            1,0, 0,0, 1,0, 0,1, 1,0, 1,0, 1,0, 1,1,
-            1,1, 0,0, 1,1, 0,1, 1,1, 1,0, 1,1, 1,1};
-    char bps[] = "16qamc";
-    float amp = 1;
-    float freq = 1;
-    int32_t cos_factor = 2;
-    int32_t n_bits = 1024;
-    alloc_cuda(n_bits);
-    alloc_memory(n_bits);
+void test_digital_modulation(float amp,
+                             float freq,
+                             int32_t cos_factor,
+                             int32_t n_bits,
+                             int32_t* bit_stream,
+                             char* mod)
+{
     modulate(amp,
-              freq,
-              cos_factor,
-              n_bits,
-              bit_stream,
-              bps);
+             freq,
+             cos_factor,
+             n_bits,
+             bit_stream,
+             mod);
 
-    demodulate(bps,
+    demodulate(mod,
                amp,
                freq,
                psk_cos_lut,
@@ -309,18 +192,52 @@ int main(void) {
                cos_factor,
                demodulated_bits);
 
-    int i = 0;
-    for (; i < n_bits; i++) {
-        if (demodulated_bits[i] != bit_stream[i]) {
-            printf("ERROR ZERO %d ||| %d != %d\n",i,  demodulated_bits[i], bit_stream[i]);
-        }
-//        else
-//        {
-//            printf(" %d = good\n", i);
-//        }
+    printf("Test %s modulation and demodulation.\n",mod);
+    if(!compare_results(n_bits, bit_stream, demodulated_bits))
+    {
+        printf("    Result ==== PASSED\n");
     }
+    else
+    {
+        printf("    Result ==== FAILED\n");
+    }
+}
+
+int main(void)
+{
+    char bask_c[] = "bask_c";
+    char bask_cuda[] = "bask_cuda";
+    char bfsk_c[] = "bfsk_c";
+    char bfsk_cuda[] = "bfsk_cuda";
+    char bpsk_c[] = "bpsk_c";
+    char bpsk_cuda[] = "bpsk_cuda";
+    char qpsk_c[] = "qpsk_c";
+    char qpsk_cuda[] = "qpsk_cuda";
+    char _16_qam_c[] = "16qam_c";
+    char _16_qam_cuda[] = "16qam_cuda";
+    const int32_t n_bits = 512;
+    int32_t bit_stream[n_bits];
+
+    float amp = 3;
+    float freq = 10000;
+    int32_t cos_factor = 2;
+
+    prepare_ref_data(n_bits, bit_stream);
+
+    alloc_memory(n_bits);
+
+
+    test_digital_modulation(amp, freq, cos_factor, n_bits, bit_stream, bask_c);
+    test_digital_modulation(amp, freq, cos_factor, n_bits, bit_stream, bask_cuda);
+    test_digital_modulation(amp, freq, cos_factor, n_bits, bit_stream, bfsk_c);
+    test_digital_modulation(amp, freq, cos_factor, n_bits, bit_stream, bfsk_cuda);
+    test_digital_modulation(amp, freq, cos_factor, n_bits, bit_stream, bpsk_c);
+    test_digital_modulation(amp, freq, cos_factor, n_bits, bit_stream, bpsk_cuda);
+    test_digital_modulation(amp, freq, cos_factor, n_bits, bit_stream, qpsk_c);
+    test_digital_modulation(amp, freq, cos_factor, n_bits, bit_stream, qpsk_cuda);
+    test_digital_modulation(amp, freq, cos_factor, n_bits, bit_stream, _16_qam_c);
+    test_digital_modulation(amp, freq, cos_factor, n_bits, bit_stream, _16_qam_cuda);
 
     memory_free();
-    free_cuda();
     return 0;
 }
