@@ -206,9 +206,9 @@ class modulation_c():
             self.mod_data_window.show_mod_data(modulated_data)
             self.mod_data_window.show()
 
-            f = open("dane_wyjsciowe.txt", "w")
-            f.write(str(demodulated_bits))
-            f.write()
+            f = open("output_data.txt", "w")
+            for idx in demodulated_bits:
+                f.write(str(idx)+", ")
             f.close()
 
             self.modulation_dll.memory_free()
@@ -225,54 +225,53 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.factor = 0
         self.setWindowTitle("Digital modulations")
-        self.setGeometry(600, 600, 600, 600)
+        self.setGeometry(600, 600, 500, 250)
 
         self.start_button = QtWidgets.QPushButton(self)
         self.start_button.setText("Start modulation")
-        self.start_button.move(300, 350)
+        self.start_button.move(350, 200)
         self.start_button.clicked.connect(self.start_clicked)
 
         self.file_button = QtWidgets.QPushButton(self)
         self.file_button.setText("Use input file")
-        self.file_button.move(300, 300)
+        self.file_button.move(200, 200)
         self.file_button.clicked.connect(self.show_file_dialog)
 
         self.setStatusBar(QStatusBar(self))
 
+        self.freq_label = QtWidgets.QLabel(self)
+        self.freq_label.setText("Frequency")
+        self.freq_label.move(140, 50)
         self.freq_spinbox = QtWidgets.QDoubleSpinBox(self)
         self.freq_spinbox.setMinimum(1)
         self.freq_spinbox.setMaximum(100000)
-        self.freq_spinbox.move(200, 100)
-
-        self.freq_label = QtWidgets.QLabel(self)
-        self.freq_label.setText("Frequency")
-        self.freq_label.move(140, 100)
-
-        self.amp_spinbox = QtWidgets.QDoubleSpinBox(self)
-        self.amp_spinbox.setMinimum(1)
-        self.amp_spinbox.move(200, 150)
+        self.freq_spinbox.move(200, 50)
 
         self.amp_label = QtWidgets.QLabel(self)
         self.amp_label.setText("Amplitude")
-        self.amp_label.move(140, 150)
+        self.amp_label.move(140, 100)
+
+        self.amp_spinbox = QtWidgets.QDoubleSpinBox(self)
+        self.amp_spinbox.setMinimum(1)
+        self.amp_spinbox.move(200, 100)
 
         self.file = QtWidgets.QFileDialog(self)
         self.file.setFileMode(QFileDialog.AnyFile)
         self.file.move(400, 400)
 
         self.text_edit = QTextEdit(self)
-        self.text_edit.move(400, 100)
+        self.text_edit.move(200, 150)
 
         self.text_input_label = QtWidgets.QLabel(self)
         self.text_input_label.setText("Input bits")
-        self.text_input_label.move(400, 70)
+        self.text_input_label.move(140, 150)
 
         self.text_edit_out = QTextEdit(self)
-        self.text_edit_out.move(400, 200)
+        self.text_edit_out.move(350, 100)
 
         self.text_output_label = QtWidgets.QLabel(self)
         self.text_output_label.setText("Demodulated bits")
-        self.text_output_label.move(400, 170)
+        self.text_output_label.move(360, 70)
 
         checkbox_location = 20
         checkbox_width = 20
