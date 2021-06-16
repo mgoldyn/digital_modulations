@@ -10,7 +10,7 @@
 
 #define N_CUDA_ELEM 512
 
-void init_fm_cos_lut(const psk_params*  params, float*  signal_lut)
+void init_fm_cos_lut(const mod_params*  params, float*  signal_lut)
 {
     const float amplitude = params->amplitude;
     const float freq = params->freq;

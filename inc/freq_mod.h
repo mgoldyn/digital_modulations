@@ -2,9 +2,9 @@
 #define FREQ_MOD_H
 
 #include "types.h"
-#include "psk_common.h"
+#include "mod_common.h"
 
-void init_fm_cos_lut(const psk_params* params, float* signal_lut);
+void init_fm_cos_lut(const mod_params* params, float* signal_lut);
 
 void modulate_fm(int32_t n_cos_samples,
                  int32_t n_bits,
